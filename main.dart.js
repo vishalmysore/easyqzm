@@ -39379,7 +39379,7 @@ var $async$yj=A.Q(function(c,d){if(c===1)return A.M(d,r)
 while(true)switch(s){case 0:m=p.b
 l=A.l(m)
 A.hb("Token stored in fetching localStorage: "+l)
-o=A.iz("http://locahost:7860/api/getQuestions?prompt="+a+"&difficulty="+b)
+o=A.iz("https://vishalmysore-easyqserver.hf.space/api/getQuestions?prompt="+a+"&difficulty="+b)
 m=m!=null?"Bearer "+l:""
 l=t.N
 s=3
