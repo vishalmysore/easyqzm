@@ -1,111 +1,144 @@
+import 'dart:convert';
+
+import 'package:easyqzm/sharing/sharing.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:app_links/app_links.dart'; // Import uni_links for deep linking
+import 'dart:async';
+import 'package:flutter/services.dart';
+
+import 'app/app.dart';
+import 'app/homescreen.dart';
 import 'home_screen.dart'; // Import the HomeScreen
+import 'model/question.model.dart';
+import 'model/sharedtext.dart';
 import 'search_screen.dart';
-void main() {
-  runApp(const MyApp());
+import 'sharing/sharing.dart';
+import 'package:faker/faker.dart';
+import 'package:universal_html/html.dart' hide Text,Navigator;
+import 'model/user.dart';
+import 'service/api_service.dart';
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => SharedTextModel()),
+        ChangeNotifierProvider(create: (_) => QuestionsModel()),
+      ],
+      child: MyApp(),
+    ),
+  );
+
+
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
+
   const MyApp({super.key});
 
   @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final  platform = MethodChannel('com.easyqzm/sharing');
+  String? sharedText;
+  StreamSubscription? _sub;
+
+
+  @override
+  void initState() {
+    super.initState();
+    _extractUrlParameters();
+    //_initUniLinks(); // Initialize deep linking
+    platform.setMethodCallHandler((call) async {
+      if (call.method == 'sharedText') {
+        final String text = call.arguments;
+        print("text here $text");
+       updateSharedText(text);
+      }
+    });
+  }
+
+  void _extractUrlParameters() {
+    // Access the current URI
+    Uri currentUri = Uri.base;
+
+    // Retrieve query parameters
+    Map<String, String> queryParams = currentUri.queryParameters;
+
+    // Extract the 'data' parameter
+    String? dataParam = queryParams['data'];
+    String? referringUrl = document.referrer;
+    String? urlParam = queryParams['url'];
+    if (dataParam != null) {
+      try {
+        // Decode the JSON data if necessary
+        Map<String, dynamic> data = jsonDecode(dataParam);
+        // Update the sharedText with the extracted data
+        setState(() {
+          sharedText = data['articleUrl'];
+        });
+      } catch (e) {
+        print('Error decoding JSON: $e');
+      }
+    }else
+    if (referringUrl != null) {
+       updateSharedText(referringUrl);
+    } else {
+      if(urlParam != null) {
+        updateSharedText(urlParam);
+      }
+    }
+  }
+  void updateSharedText(String text) {
+  //  final sharedTextModel = context.read<SharedTextModel>();
+  //  sharedTextModel.updateSharedText(text);
+    print('shared text here in update $text');
+
+    sharedText=text;
+    // Remove all previous screens and navigate to the new one
+    final sharedTextModel = context.read<SharedTextModel>();
+    sharedTextModel.updateSharedText(text);
+  }
+
+  // Initialize deep linking and capture the URL
+
+
+  @override
+  void dispose() {
+    _sub?.cancel(); // Clean up the subscription
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    var faker = Faker();
+    String? storedUsername = window.localStorage['username'];
+
+    // If not, generate a new one and store it
+    if (storedUsername == null) {
+      storedUsername = faker.internet.userName();
+      // createNewUser(storedUsername);
+      window.localStorage['username'] = storedUsername;
+      window.sessionStorage['username'] = storedUsername;
+    }
+
+    // Check if there's a shared URL, and navigate to ShareUrlScreen if present
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'EasyQz',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'AI Powered Education'),
+      home:  MyHomePage(title: 'AI Powered Education'),
+
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
 
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              // Add your notification functionality here
-              print("Notifications tapped");
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: CircleAvatar(
-              radius: 16,
-              backgroundImage: NetworkImage('https://easyqz.online/easylogo2.png'),
-            ),
-            label: 'Profile',
-          ),
-        ],
-        onTap: (int index) {
-          // Navigate to Home screen on tap
-          if (index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const HomeScreen()),
-            );
-          } else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SearchScreen()),
-            );
-          } else if (index == 2) {
-            print("Profile tapped");
-          }
-        },
-      ),
-    );
-  }
-}
