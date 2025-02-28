@@ -1,14 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'model/question.dart';
 import 'model/question.model.dart';
+import 'model/score.dart';
 import 'model/sharedtext.dart';
 import 'service/api_service.dart';
-
+import 'package:universal_html/html.dart' hide Text,Navigator;
+import 'package:loader_overlay/loader_overlay.dart';
 class SearchScreen extends StatefulWidget {
   final String? text;
+
   const SearchScreen({Key? key, required this.text}) : super(key: key);
 
   @override
@@ -17,31 +23,47 @@ class SearchScreen extends StatefulWidget {
 
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
+
   final ApiService apiService = ApiService();
   Future<QuizResponse>? quizResponse;
 
+  final String? userId = window.localStorage['username'];
+  late  String userInput;
+
+  @override
+  void dispose() {
+
+    super.dispose();
+  }
   Future<void> _fetchData(String difficulty) async {
-    final String userInput = _controller.text.trim();
+    context.loaderOverlay.show();
+    userInput = _controller.text.trim();
     if (userInput.isEmpty) return;
+
 
     try {
       final response = await apiService.fetchQuestions(userInput, difficulty);
       setState(() {
-        quizResponse = Future.value(response);  // Set the fetched data to display
+        quizResponse = Future.value(response);
+
       });
     } catch (e) {
       setState(() {
         quizResponse = Future.error("Error: ${e.toString()}");
+
       });
     }
+    context.loaderOverlay.hide();
   }
 
   // Function to check answers
   void _checkAnswers() {
     if (quizResponse != null) {
+
       quizResponse!.then((quiz) {
         int correctAnswers = 0;
-
+        Score finalScore = calculateScore(quiz, userId!);
+        apiService.submitScore(finalScore);
         // Count correct answers
         for (var question in quiz.questions) {
           if (question.userAnswer == question.correctAnswer) {
@@ -71,10 +93,44 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
+  Score calculateScore(QuizResponse quizResponse, String userId) {
+    int correctAnswers = 0;
+    int incorrectAnswers = 0;
+    int skippedQuestions = 0;
+    int totalQuestions = quizResponse.questions.length;
+
+    for (var question in quizResponse.questions) {
+      if (question.userAnswer == null || question.userAnswer!.isEmpty) {
+        skippedQuestions++;
+      } else if (question.userAnswer == question.correctAnswer) {
+        correctAnswers++;
+      } else {
+        incorrectAnswers++;
+      }
+    }
+
+    int totalScore = correctAnswers * 10; // Assuming each question is worth 10 points
+    int score = correctAnswers ;
+    double percentage = (correctAnswers / totalQuestions) * 100;
+
+    return Score(
+      userId: userId,
+      score: score,
+      totalQuestions: totalQuestions,
+      correctAnswers: correctAnswers,
+      incorrectAnswers: incorrectAnswers,
+      skippedQuestions: skippedQuestions,
+      totalScore: totalScore,
+      percentage: percentage,
+      quizId: quizResponse.quizId,
+      questions: quizResponse.questions,
+      url: userInput, topics:userInput
+    );
+  }
   @override
   Widget build(BuildContext context) {
     print("building search screen ${widget.text}");
-    return Scaffold(
+    return  LoaderOverlay ( child: Scaffold(
       appBar: AppBar(title: Text("Search Quiz")),
       body: SingleChildScrollView(  // Wrap the entire body in SingleChildScrollView
         child: Padding(
@@ -170,6 +226,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         ),
       ),
+    )
     );
   }
 }

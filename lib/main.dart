@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
+import 'package:easyqzm/model/performanceupdate.dart';
+import 'package:easyqzm/model/userupdate.dart';
+import 'package:easyqzm/service/sse_service.dart';
 import 'package:easyqzm/sharing/sharing.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +11,7 @@ import 'package:app_links/app_links.dart'; // Import uni_links for deep linking
 import 'dart:async';
 import 'package:flutter/services.dart';
 
-import 'app/app.dart';
+
 import 'app/homescreen.dart';
 import 'home_screen.dart'; // Import the HomeScreen
 import 'model/question.model.dart';
@@ -27,6 +31,8 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => SharedTextModel()),
         ChangeNotifierProvider(create: (_) => QuestionsModel()),
+        ChangeNotifierProvider(create: (_) => UserUpdate()),
+        ChangeNotifierProvider(create: (_) => PerformanceUpdate()),
       ],
       child: MyApp(),
     ),
@@ -37,7 +43,7 @@ void main() async {
 
 class MyApp extends StatefulWidget {
 
-  const MyApp({super.key});
+  const  MyApp({super.key});
 
   @override
   _MyAppState createState() => _MyAppState();
@@ -51,9 +57,10 @@ class _MyAppState extends State<MyApp> {
 
 
   @override
-  void initState() {
+   initState()  {
     super.initState();
     _extractUrlParameters();
+    setUserandNotifier();
     //_initUniLinks(); // Initialize deep linking
     platform.setMethodCallHandler((call) async {
       if (call.method == 'sharedText') {
@@ -64,6 +71,59 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
+  Future<void> setUserandNotifier() async {
+    await _setupUser();
+    setNotifier();
+  }
+
+  Future<void> _setupUser() async{
+    var faker = Faker();
+
+    String? storedUsername = window.localStorage['username'];
+    String? jwtToken = window.localStorage['jwtToken'];
+    print(jwtToken);
+    // If not, generate a new one and store it
+    if((jwtToken == null) || await  isTokenExpired(jwtToken)) {
+      storedUsername = faker.internet.userName();
+      await createNewUser(storedUsername,context.read<UserUpdate>());
+      window.localStorage['username'] = storedUsername;
+      window.sessionStorage['username'] = storedUsername;
+    } else {
+      await  loadUserFromStorage(context.read<UserUpdate>());
+    }
+
+  }
+
+  void setNotifier() {
+    SSEService _sseService = SSEService();
+    _sseService.connect(context.read<PerformanceUpdate>());
+  }
+
+  Future<bool> isTokenExpired(String? token) async {
+    if (token == null) {
+      return true; // Token is null, consider it expired
+    }
+
+    try {
+      // Decode the JWT token
+      final jwt = JWT.decode(token);
+
+      // Extract the 'exp' claim (expiration time)
+      final exp = jwt.payload['exp'];
+
+      if (exp == null) {
+        return true; // No expiration claim, consider it expired
+      }
+
+      // Convert 'exp' to DateTime
+      final expirationDate = DateTime.fromMillisecondsSinceEpoch(exp * 1000, isUtc: true);
+
+      // Compare with current time
+      return DateTime.now().isAfter(expirationDate);
+    } catch (e) {
+      return true; // Error decoding token, consider it expired
+    }
+  }
   void _extractUrlParameters() {
     // Access the current URI
     Uri currentUri = Uri.base;
@@ -117,16 +177,6 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    var faker = Faker();
-    String? storedUsername = window.localStorage['username'];
-
-    // If not, generate a new one and store it
-    if (storedUsername == null) {
-      storedUsername = faker.internet.userName();
-      // createNewUser(storedUsername);
-      window.localStorage['username'] = storedUsername;
-      window.sessionStorage['username'] = storedUsername;
-    }
 
     // Check if there's a shared URL, and navigate to ShareUrlScreen if present
     return MaterialApp(

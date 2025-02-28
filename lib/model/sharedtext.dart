@@ -7,6 +7,8 @@ class SharedTextModel extends ChangeNotifier {
   void updateSharedText(String newText) {
     print("received $newText");
     _sharedText = newText;
-    notifyListeners();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();  // Ensure this runs *after* the build phase
+    });
   }
 }

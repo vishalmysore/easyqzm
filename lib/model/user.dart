@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:easyqzm/model/userupdate.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:universal_html/html.dart' hide Text,Navigator;
@@ -37,9 +38,44 @@ class User {
       'articles': articles,
     };
   }
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      userId: json['userId'],
+      emailId: json['emailId'],
+      name: json['name'],
+      avatar: json['avatar'],
+      expertTopics: List<String>.from(json['expertTopics']),
+      achievements: List<String>.from(json['achievements']),
+      isPermanent: json['isPermanent'],
+      articles: List<String>.from(json['articles']),
+    );
+  }
 }
 
-Future<void> createNewUser(String username) async {
+Future<void> loadUserFromStorage(UserUpdate userUpdate) async {
+  // Retrieve the JSON string from local storage
+  String? userJson = window.localStorage['user'];
+
+  if (userJson != null) {
+    try {
+      // Decode the JSON string into a map
+      Map<String, dynamic> userMap = jsonDecode(userJson);
+
+      // Create a User object from the map
+      User user = User.fromJson(userMap);
+
+      // Update the UserUpdate provider with the new User object
+      userUpdate.setUser(user);
+    } catch (e) {
+      print('Error decoding user JSON: $e');
+    }
+  } else {
+    print('No user data found in local storage.');
+  }
+}
+
+
+Future<User> createNewUser(String username, UserUpdate userUpdte) async {
  final String apiUrl = const String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://localhost:7860/api/',  // Default for local environment
@@ -69,13 +105,15 @@ Future<void> createNewUser(String username) async {
     );
 
     if (response.statusCode == 200) {
+
+      String: var userStr = jsonEncode(user.toJson());
+      window.localStorage['user'] =userStr;
       // Success, handle response if necessary
       final responseData = json.decode(response.body);
       String token = responseData['token'];
-
       // Store the token in localStorage
       window.localStorage['jwtToken'] = token;
-
+      userUpdte.setUser(user);
       print("Token stored in localStorage: $token");
     } else {
       // Handle error response
@@ -84,4 +122,6 @@ Future<void> createNewUser(String username) async {
   } catch (e) {
     print('Error: $e');
   }
+
+  return user;
 }

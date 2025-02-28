@@ -1,9 +1,12 @@
+import 'package:easyqzm/model/userperformance.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:universal_html/html.dart';
 
 import '../model/question.dart';
+import '../model/score.dart';
+import '../model/user.dart';
 
 class ApiService {
   final String apiUrl = const String.fromEnvironment(
@@ -36,5 +39,48 @@ class ApiService {
     }
   }
 
+  Future<UserPerformance?> fetchUserPerformance() async {
+    final url = Uri.parse('${apiUrl}getUserAnalytics');
 
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token != null ? 'Bearer $token' : '',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return UserPerformance.fromJson(json.decode(response.body));
+      } else {
+        print('Failed to load user performance: ${response.statusCode}');
+        return null; // Return null in case of an error
+      }
+    } catch (e) {
+      print('Error fetching user performance: $e');
+      return null; // Handle exceptions
+    }
+  }
+
+
+  Future<void> submitScore(Score score) async {
+
+
+    try {
+      final response = await http.post(
+        Uri.parse('${apiUrl}updateResults'),
+        headers: {'Content-Type': 'application/json','Authorization': token != null ? 'Bearer $token' : '', },
+        body: jsonEncode(score.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        print('Score submitted successfully');
+      } else {
+        print('Failed to submit score: ${response.body}');
+      }
+    } catch (e) {
+      print('Error submitting score: $e');
+    }
+  }
 }
