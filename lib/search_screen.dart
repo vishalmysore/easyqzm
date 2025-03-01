@@ -267,30 +267,55 @@ class _SearchScreenState extends State<SearchScreen> {
                               runSpacing: 10, // Vertical spacing between rows of buttons
                               alignment: WrapAlignment.center,
                               children: [
-                                ElevatedButton(
+                                ElevatedButton.icon(
                                   onPressed: _checkAnswers,
-                                  child: Text("Submit"),
+                                  icon: Icon(Icons.send),  // Send icon
+                                  label: Text("Submit"),
                                 ),
-                                ElevatedButton(
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Small Restart Icon Button
+                                IconButton(
                                   onPressed: () {
                                     setState(() {
                                       quizResponse = null; // Reset quiz state
                                       _fetchData("1"); // Re-fetch with default difficulty
                                     });
                                   },
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-                                  child: Text("Restart Quiz"),
+                                  icon: Icon(Icons.refresh, color: Colors.orange),
+                                  tooltip: "Restart Quiz",
                                 ),
-                                ElevatedButton(
-                                  onPressed: _shareResults,
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                                  child: Text("Share Results"),
+
+                                // More Options (Dropdown Menu)
+                                PopupMenuButton<String>(
+                                  icon: Icon(Icons.more_vert), // Three dots icon
+                                  onSelected: (value) {
+                                    if (value == "share") {
+                                      _shareResults();
+                                    } else if (value == "export") {
+                                      _exportToPDF();
+                                    }
+                                  },
+                                  itemBuilder: (BuildContext context) => [
+                                    PopupMenuItem(
+                                      value: "share",
+                                      child: ListTile(
+                                        leading: Icon(Icons.share, color: Colors.blue),
+                                        title: Text("Share Results"),
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: "export",
+                                      child: ListTile(
+                                        leading: Icon(Icons.picture_as_pdf, color: Colors.green),
+                                        title: Text("Export PDF"),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                ElevatedButton(
-                                  onPressed: _exportToPDF,
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                                  child: Text("Export PDF"),
-                                ),
+                              ],
+                            ),
                               ],
                             ),
                           ),
