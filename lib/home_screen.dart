@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'home/author_list.dart';
+import 'home/easywordcloud.dart';
+import 'home/trendinglinks.dart';
+
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
+
 
   @override
   Widget build(BuildContext context) {
@@ -19,11 +25,11 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
         ),
-        body: const TabBarView(
+        body:  TabBarView(
           children: [
-            _TabContent(title: "Trending Links"),
-            _TabContent(title: "Trending Topics"),
-            _TabContent(title: "Top Authors"),
+             TrendingLinksTab(),
+              WordCloudPage(title: "Trending Topics"),
+              TopAuthorsPage(),
             _TabContent(title: "Add New Content"),
           ],
         ),

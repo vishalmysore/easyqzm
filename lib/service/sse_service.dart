@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
 import 'package:flutter_client_sse/flutter_client_sse.dart';
 import 'package:universal_html/html.dart';
 
 import '../model/performanceupdate.dart';
 class SSEService {
-  final String baseURL = const String.fromEnvironment(
-    'NOTIFICATION_BASE_URL',
-    defaultValue: 'http://localhost:7860/bs/',  // Default for local environment
-  );
+  final String baseURL = kReleaseMode
+      ? 'https://vishalmysore-easyqserver.hf.space/bs/'  // Production URL
+      : 'http://localhost:7860/bs/';  // Local development URL
 
 
   // Fetch the token from localStorage

@@ -1,5 +1,7 @@
 import 'package:easyqzm/service/api_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -10,6 +12,11 @@ import '../model/performanceupdate.dart';
 import '../model/user.dart';
 import '../model/userperformance.dart';
 
+final GoogleSignIn _googleSignIn = GoogleSignIn(
+  clientId: kReleaseMode
+      ? "992082477434-5durkouoia0lo1o7pk9lpmp08mbcnfru.apps.googleusercontent.com" // Production
+      : "992082477434-nbjvh0ub7ge30uj928muanlfj067726f.apps.googleusercontent.com", // Local
+);
 class UserProfileScreen extends StatefulWidget {
   final User user;
 
@@ -74,13 +81,119 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget _buildUserSection() {
     return Card(
       margin: EdgeInsets.all(10),
-      child: ListTile(
-        leading: CircleAvatar(backgroundImage: NetworkImage(widget.user.avatar)),
-        title: Text(widget.user.name, style: TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text("Quiz Type: ${userPerformance?.quizType ?? ''}"),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: SizedBox(
+              width: 50,
+              height: 50,
+              child: CircleAvatar(
+                radius: 25,
+                backgroundImage: NetworkImage(
+                  widget.user.avatar.isNotEmpty
+                      ? "https://api.allorigins.win/raw?url=${widget.user.avatar}"
+                      : "https://api.allorigins.win/raw?url=https://i.pravatar.cc/150?img=14", // Fallback avatar
+                ),
+              ),
+            ),
+            title: Text(
+              widget.user.name,
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Email: ${widget.user.emailId ?? 'Not available'}"),
+                Text("Quiz Type: ${userPerformance?.quizType ?? ''}"),
+              ],
+            ),
+          ),
+          Divider(), // Separates sections visually
+
+          // Expert Topics Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Text(
+              "Expert Topics: ${widget.user.expertTopics.isNotEmpty ? widget.user.expertTopics.join(', ') : 'None'}",
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+
+          // Achievements Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            child: Text(
+              "Achievements: ${widget.user.achievements.isNotEmpty ? widget.user.achievements.join(', ') : 'None'}",
+              style: TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+
+          // Articles Section (as bullet points)
+          if (widget.user.articles.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              child: Text(
+                "Articles:",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: widget.user.articles
+                    .map((article) => Text("• $article", style: TextStyle(fontSize: 14)))
+                    .toList(),
+              ),
+            ),
+          ] else
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              child: Text(
+                "No articles available.",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+
+          // Sign-in button for non-permanent users
+          if (!widget.user.isPermanent)
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: ElevatedButton.icon(
+                onPressed: _signInWithGoogle, // Function to handle sign-in
+                icon: Icon(Icons.login),
+                label: Text("Sign in with Google"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
+  Future<void> _signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser != null) {
+        print("Signed in as: ${googleUser.displayName}");
+        print("Email: ${googleUser.email}");
+        print("Profile Picture: ${googleUser.photoUrl}");
+
+        // Here, you can update the user's data in your app
+        setState(() {
+         // widget.user.name = googleUser.displayName ?? "Unknown User";
+        //  widget.user.emailId = googleUser.email;
+        //  widget.user.avatar = googleUser.photoUrl ?? "";
+        });
+      }
+    } catch (error) {
+      print("Google Sign-In Error: $error");
+    }
+  }
+
 
   // Section 2: Notifications
   Widget _buildNotificationsSection() {

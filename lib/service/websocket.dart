@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:universal_html/html.dart';
 class WebSocketService {
@@ -9,10 +10,9 @@ class WebSocketService {
   Stream<dynamic> connect(String endpoint) {
 
     final String? token = window.localStorage['jwtToken'];
-    final wsUrl = const String.fromEnvironment(
-    'WS_BASE_URL',
-    defaultValue: 'ws://localhost:7860/ws/',  // Default for local environment
-    );
+    final String wsUrl = kReleaseMode
+        ? 'wss://vishalmysore-easyqserver.hf.space/ws/'  // Production WebSocket URL
+        : 'ws://localhost:7860/ws/';  // Local WebSocket URL
 
     if (_channels.containsKey(endpoint)) {
       print('Already connected to $endpoint');

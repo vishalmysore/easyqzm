@@ -12,6 +12,7 @@ import '../model/userupdate.dart';
 import '../profile/userprofile.dart';
 import '../search_screen.dart';
 import '../service/websocket.dart';
+import 'help.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -39,7 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   }
 
-  void _incrementCounter () {
+  void _help () {
     print('clicked');
   }
 
@@ -121,9 +122,14 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) => HelpScreen(),
+          );
+        },
+        tooltip: 'Help',
+        child: Icon(Icons.help),
       ),
         bottomNavigationBar: Consumer<UserUpdate>(
 
@@ -148,9 +154,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 BottomNavigationBarItem(
                   icon: userUpdate.user != null
                       ? CircleAvatar(
-                    radius: 16,
-                    backgroundImage: NetworkImage(userUpdate.user!.avatar),
-                  )
+            radius: 20,
+            backgroundImage: NetworkImage(
+            userUpdate.user?.avatar?.isNotEmpty == true
+            ? "https://api.allorigins.win/raw?url=${userUpdate.user!.avatar}"
+                : "https://api.allorigins.win/raw?url=https://i.pravatar.cc/150?img=14", // Fallback if no avatar
+            ),
+            )
                       : const Icon(Icons.person), // Default icon
                   label: userUpdate.user?.name ?? 'Profile', // Moved inside Consumer
                 ),

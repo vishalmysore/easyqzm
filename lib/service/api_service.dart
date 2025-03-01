@@ -1,18 +1,21 @@
+
+
 import 'package:easyqzm/model/userperformance.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:universal_html/html.dart';
 
+import '../model/link.dart';
 import '../model/question.dart';
 import '../model/score.dart';
 import '../model/user.dart';
 
 class ApiService {
-  final String apiUrl = const String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:7860/api/',  // Default for local environment
-  );
+  final String apiUrl = kReleaseMode
+      ? 'https://vishalmysore-easyqserver.hf.space/api/'  // Production
+      : 'http://localhost:7860/api/';  // Local
 
 
   // Fetch the token from localStorage
@@ -81,6 +84,62 @@ class ApiService {
       }
     } catch (e) {
       print('Error submitting score: $e');
+    }
+  }
+
+
+  Future<List<Link>> getTrendingLastHour() async {
+    final url = Uri.parse('${apiUrl}getTrendingLastHour');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token != null ? 'Bearer $token' : '',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Decode JSON response
+        List<dynamic> jsonData = jsonDecode(response.body);
+
+        // Convert JSON list to List<Link>
+        return jsonData.map((item) => Link.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to fetch trending links: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching trending links: $e');
+      throw Exception('Failed to fetch trending links');
+    }
+  }
+
+
+  Future<List<Link>> getTrendingLastAll() async {
+    final url = Uri.parse('${apiUrl}getTrendingAll');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token != null ? 'Bearer $token' : '',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        // Decode JSON response
+        List<dynamic> jsonData = jsonDecode(response.body);
+
+        // Convert JSON list to List<Link>
+        return jsonData.map((item) => Link.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to fetch trending links: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching trending links: $e');
+      throw Exception('Failed to fetch trending links');
     }
   }
 }
