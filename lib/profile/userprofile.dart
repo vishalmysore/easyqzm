@@ -13,6 +13,7 @@ import '../model/user.dart';
 import '../model/userperformance.dart';
 
 final GoogleSignIn _googleSignIn = GoogleSignIn(
+  scopes: ['openid', 'email', 'profile'],
   clientId: kReleaseMode
       ? "992082477434-5durkouoia0lo1o7pk9lpmp08mbcnfru.apps.googleusercontent.com" // Production
       : "992082477434-nbjvh0ub7ge30uj928muanlfj067726f.apps.googleusercontent.com", // Local
@@ -177,16 +178,26 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
       if (googleUser != null) {
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+        final String? accessToken = googleAuth.accessToken;
+        final String? idToken = googleAuth.idToken; // ID Token (useful for backend auth)
+
         print("Signed in as: ${googleUser.displayName}");
         print("Email: ${googleUser.email}");
         print("Profile Picture: ${googleUser.photoUrl}");
+        print("Access Token: $accessToken");
+        print("ID Token: $idToken");
 
-        // Here, you can update the user's data in your app
+        // Store the access token if needed for API calls
+        // You might send the ID Token to your backend for verification
+
         setState(() {
-         // widget.user.name = googleUser.displayName ?? "Unknown User";
-        //  widget.user.emailId = googleUser.email;
-        //  widget.user.avatar = googleUser.photoUrl ?? "";
+          // widget.user.name = googleUser.displayName ?? "Unknown User";
+          // widget.user.emailId = googleUser.email;
+          // widget.user.avatar = googleUser.photoUrl ?? "";
         });
       }
     } catch (error) {

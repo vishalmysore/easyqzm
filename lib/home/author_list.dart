@@ -7,7 +7,7 @@ class TopAuthorsPage extends StatelessWidget {
       topics: ["AI", "Flutter", "Cybersecurity"],
       highestScore: 98,
       bio: "Tech enthusiast, AI researcher, and Flutter expert.",
-      imageUrl: "https://i.pravatar.cc/150?img=14", // Replace with actual image
+      imageUrl: "https://i.pravatar.cc/150?img=14",
     ),
     Author(
       name: "Jane Smith",
@@ -16,7 +16,64 @@ class TopAuthorsPage extends StatelessWidget {
       bio: "Passionate about data and the future of computing.",
       imageUrl: "https://i.pravatar.cc/150?img=18",
     ),
+    Author(
+      name: "Alice Johnson",
+      topics: ["Blockchain", "Web3", "Smart Contracts"],
+      highestScore: 92,
+      bio: "Blockchain advocate and smart contract developer.",
+      imageUrl: "https://i.pravatar.cc/150?img=25",
+    ),
+    Author(
+      name: "Michael Brown",
+      topics: ["Machine Learning", "Deep Learning", "AI Ethics"],
+      highestScore: 97,
+      bio: "AI researcher focused on ethical AI and automation.",
+      imageUrl: "https://i.pravatar.cc/150?img=22",
+    ),
+    Author(
+      name: "Sophia Lee",
+      topics: ["Cybersecurity", "Ethical Hacking", "Penetration Testing"],
+      highestScore: 94,
+      bio: "Security expert specializing in ethical hacking and defense strategies.",
+      imageUrl: "https://i.pravatar.cc/150?img=30",
+    ),
+    Author(
+      name: "Robert Garcia",
+      topics: ["DevOps", "Cloud Computing", "Kubernetes"],
+      highestScore: 96,
+      bio: "Cloud architect and DevOps advocate with years of experience.",
+      imageUrl: "https://i.pravatar.cc/150?img=33",
+    ),
+    Author(
+      name: "Emily Davis",
+      topics: ["Natural Language Processing", "Chatbots", "Voice Assistants"],
+      highestScore: 91,
+      bio: "AI engineer specializing in NLP and chatbot development.",
+      imageUrl: "https://i.pravatar.cc/150?img=37",
+    ),
+    Author(
+      name: "William Martinez",
+      topics: ["Game Development", "Unity", "AR/VR"],
+      highestScore: 89,
+      bio: "Game developer passionate about AR/VR and immersive experiences.",
+      imageUrl: "https://i.pravatar.cc/150?img=42",
+    ),
+    Author(
+      name: "Olivia Thompson",
+      topics: ["Big Data", "Hadoop", "Data Engineering"],
+      highestScore: 93,
+      bio: "Data engineer working with large-scale distributed systems.",
+      imageUrl: "https://i.pravatar.cc/150?img=46",
+    ),
+    Author(
+      name: "Daniel Wilson",
+      topics: ["Full Stack Development", "React", "Node.js"],
+      highestScore: 90,
+      bio: "Full-stack developer building scalable web applications.",
+      imageUrl: "https://i.pravatar.cc/150?img=50",
+    ),
   ];
+
 
   @override
   Widget build(BuildContext context) {

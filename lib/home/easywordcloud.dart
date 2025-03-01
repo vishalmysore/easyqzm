@@ -15,155 +15,73 @@ class WordCloudPage extends StatefulWidget {
 }
 
 class WordCloudScreen extends State<WordCloudPage> {
-
-  List<Map> word_list = [
+  List<Map> wordList = [
     {'word': 'Apple', 'value': 100},
     {'word': 'Samsung', 'value': 60},
     {'word': 'Intel', 'value': 55},
     {'word': 'Tesla', 'value': 50},
     {'word': 'AMD', 'value': 40},
     {'word': 'Google', 'value': 35},
-    {'word': 'Qualcom', 'value': 31},
-    {'word': 'Netflix', 'value': 27},
-    {'word': 'Meta', 'value': 27},
-    {'word': 'Amazon', 'value': 26},
-    {'word': 'Nvidia', 'value': 25},
-    {'word': 'Microsoft', 'value': 25},
-    {'word': 'TSMC', 'value': 24},
-    {'word': 'PayPal', 'value': 24},
-    {'word': 'AT&T', 'value': 24},
-    {'word': 'Oracle', 'value': 23},
-    {'word': 'Unity', 'value': 23},
-    {'word': 'Roblox', 'value': 23},
-    {'word': 'Lucid', 'value': 22},
-    {'word': 'Naver', 'value': 20},
-    {'word': 'Kakao', 'value': 18},
-    {'word': 'NC Soft', 'value': 18},
-    {'word': 'LG', 'value': 16},
-    {'word': 'Hyundai', 'value': 16},
-    {'word': 'KIA', 'value': 16},
-    {'word': 'twitter', 'value': 16},
-    {'word': 'Tencent', 'value': 15},
-    {'word': 'Alibaba', 'value': 15},
-    {'word': 'LG', 'value': 16},
-    {'word': 'Hyundai', 'value': 16},
-    {'word': 'KIA', 'value': 16},
-    {'word': 'twitter', 'value': 16},
-    {'word': 'Tencent', 'value': 15},
-    {'word': 'Alibaba', 'value': 15},
-    {'word': 'Disney', 'value': 14},
-    {'word': 'Spotify', 'value': 14},
-    {'word': 'Udemy', 'value': 13},
-    {'word': 'Quizlet', 'value': 13},
-    {'word': 'Visa', 'value': 12},
-    {'word': 'Lucid', 'value': 22},
-    {'word': 'Naver', 'value': 20},
-    {'word': 'Hyundai', 'value': 16},
-    {'word': 'KIA', 'value': 16},
-    {'word': 'twitter', 'value': 16},
-    {'word': 'Tencent', 'value': 15},
-    {'word': 'Alibaba', 'value': 15},
-    {'word': 'Disney', 'value': 14},
-    {'word': 'Spotify', 'value': 14},
-    {'word': 'Visa', 'value': 12},
-    {'word': 'Microsoft', 'value': 10},
-    {'word': 'TSMC', 'value': 10},
-    {'word': 'PayPal', 'value': 24},
-    {'word': 'AT&T', 'value': 10},
-    {'word': 'Oracle', 'value': 10},
-    {'word': 'Unity', 'value': 10},
-    {'word': 'Roblox', 'value': 10},
-    {'word': 'Lucid', 'value': 10},
-    {'word': 'Naver', 'value': 10},
-    {'word': 'Kakao', 'value': 18},
-    {'word': 'NC Soft', 'value': 18},
-    {'word': 'LG', 'value': 16},
-    {'word': 'Hyundai', 'value': 16},
-    {'word': 'KIA', 'value': 16},
-    {'word': 'twitter', 'value': 16},
-    {'word': 'Tencent', 'value': 10},
-    {'word': 'Alibaba', 'value': 10},
-    {'word': 'Disney', 'value': 14},
-    {'word': 'Spotify', 'value': 14},
-    {'word': 'Udemy', 'value': 13},
-    {'word': 'NC Soft', 'value': 12},
-    {'word': 'LG', 'value': 16},
-    {'word': 'Hyundai', 'value': 10},
-    {'word': 'KIA', 'value': 16},
+    {'word': 'Java', 'value': 115},
+    {'word': 'Spring', 'value': 55},
   ];
-  int count = 0;
-  String wordstring = '';
+
+  Map<String, List<String>> topicWebsites = {
+    'Apple': ['CNN', 'BBC', 'Forbes'],
+    'Samsung': ['TechCrunch', 'CNET', 'Gizmodo'],
+    'Intel': ['Wired', 'The Verge', 'Engadget'],
+    'Tesla': ['Bloomberg', 'CNBC', 'Yahoo Finance'],
+    'AMD': ['Toms Hardware', 'AnandTech', 'PC Gamer'],
+    'Google': ['TechRadar', 'Android Authority', 'The Next Web'],
+  };
+
+  String selectedTopic = '';
+  int selectedCount = 0;
+  List<String> websites = [];
 
   @override
   Widget build(BuildContext context) {
-    WordCloudData wcdata = WordCloudData(data: word_list);
-    WordCloudTap wordtaps = WordCloudTap();
+    WordCloudData wcData = WordCloudData(data: wordList);
+    WordCloudTap wordTaps = WordCloudTap();
 
-
-    //WordCloudTap Setting
-    for (int i = 0; i < word_list.length; i++) {
+    for (int i = 0; i < wordList.length; i++) {
       void tap() {
         setState(() {
-          count += 1;
-          wordstring = word_list[i]['word'];
+          selectedTopic = wordList[i]['word'];
+          selectedCount = wordList[i]['value'];
+          websites = topicWebsites[selectedTopic] ?? [];
         });
       }
-
-      wordtaps.addWordtap(word_list[i]['word'], tap);
+      wordTaps.addWordtap(wordList[i]['word'], tap);
     }
-
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme
-            .of(context)
-            .colorScheme
-            .inversePrimary,
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
       body: Center(
         child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text('Clicked Word : ${wordstring}',
-                style: TextStyle(fontSize: 20),),
-              Text('Clicked Count : ${count}', style: TextStyle(fontSize: 20)),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  WordCloudTapView(
-                    data: wcdata,
-                    wordtap: wordtaps,
-                    mapcolor: Color.fromARGB(255, 174, 183, 235),
-                    mapwidth: 500,
-                    mapheight: 500,
-                    fontWeight: FontWeight.bold,
-                    shape: WordCloudCircle(radius: 250),
-                    colorlist: [
-                      Colors.black,
-                      Colors.redAccent,
-                      Colors.indigoAccent
-                    ],
-                  ),
-                  SizedBox(
-                    height: 15,
-                    width: 30,
-                  ),
-                  WordCloudView(
-                    data: wcdata,
-                    mapcolor: Color.fromARGB(255, 174, 183, 235),
-                    mapwidth: 500,
-                    mapheight: 500,
-                    fontWeight: FontWeight.bold,
-                    colorlist: [
-                      Colors.black,
-                      Colors.redAccent,
-                      Colors.indigoAccent
-                    ],
-                  ),
-                ],
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text('Selected Topic: $selectedTopic', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('Readers Count: $selectedCount', style: TextStyle(fontSize: 18)),
+            if (websites.isNotEmpty)
+              Column(
+                children: websites.map((site) => Text('- $site', style: TextStyle(fontSize: 16))).toList(),
               ),
-            ]
+            SizedBox(height: 20),
+            WordCloudTapView(
+              data: wcData,
+              wordtap: wordTaps,
+              mapcolor: Colors.blueGrey.shade100,
+              mapwidth: 500,
+              mapheight: 500,
+              fontWeight: FontWeight.bold,
+              shape: WordCloudCircle(radius: 250),
+              colorlist: [Colors.black, Colors.redAccent, Colors.indigoAccent],
+            ),
+          ],
         ),
       ),
     );

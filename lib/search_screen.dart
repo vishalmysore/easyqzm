@@ -4,14 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:loader_overlay/loader_overlay.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'dart:convert';
 import 'model/question.dart';
 import 'model/question.model.dart';
 import 'model/score.dart';
 import 'model/sharedtext.dart';
 import 'service/api_service.dart';
-import 'package:universal_html/html.dart' hide Text,Navigator;
+import 'package:universal_html/html.dart' hide Text,Navigator,File;
 import 'package:loader_overlay/loader_overlay.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 class SearchScreen extends StatefulWidget {
   final String? text;
 
@@ -56,6 +62,45 @@ class _SearchScreenState extends State<SearchScreen> {
     context.loaderOverlay.hide();
   }
 
+  void _shareResults() async {
+    if (quizResponse == null) return;
+
+    quizResponse!.then((quiz) {
+      String resultText = "Quiz Completed!\n\n"
+          "Correct Answers: ${quiz.questions.where((q) => q.userAnswer == q.correctAnswer).length} / ${quiz.questions.length}";
+
+      Share.share(resultText);
+    });
+  }
+
+  void _exportToPDF() async {
+    if (quizResponse == null) return;
+
+    final pdf = pw.Document();
+    quizResponse!.then((quiz) async {
+      pdf.addPage(
+        pw.Page(
+          build: (pw.Context context) {
+            return pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text("Quiz Results", style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 10),
+                ...quiz.questions.map((q) => pw.Text("${q.questionText}\nYour Answer: ${q.userAnswer ?? 'Not Answered'}\nCorrect Answer: ${q.correctAnswer}\n")),
+              ],
+            );
+          },
+        ),
+      );
+
+      // Save PDF and open it
+      final output = await getApplicationDocumentsDirectory();
+      final file = File("${output.path}/quiz_results.pdf");
+      await file.writeAsBytes(await pdf.save());
+
+      Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+    });
+  }
   // Function to check answers
   void _checkAnswers() {
     if (quizResponse != null) {
@@ -114,17 +159,17 @@ class _SearchScreenState extends State<SearchScreen> {
     double percentage = (correctAnswers / totalQuestions) * 100;
 
     return Score(
-      userId: userId,
-      score: score,
-      totalQuestions: totalQuestions,
-      correctAnswers: correctAnswers,
-      incorrectAnswers: incorrectAnswers,
-      skippedQuestions: skippedQuestions,
-      totalScore: totalScore,
-      percentage: percentage,
-      quizId: quizResponse.quizId,
-      questions: quizResponse.questions,
-      url: userInput, topics:userInput
+        userId: userId,
+        score: score,
+        totalQuestions: totalQuestions,
+        correctAnswers: correctAnswers,
+        incorrectAnswers: incorrectAnswers,
+        skippedQuestions: skippedQuestions,
+        totalScore: totalScore,
+        percentage: percentage,
+        quizId: quizResponse.quizId,
+        questions: quizResponse.questions,
+        url: userInput, topics:userInput
     );
   }
   @override
@@ -137,22 +182,22 @@ class _SearchScreenState extends State<SearchScreen> {
           padding: EdgeInsets.all(16.0),
           child: Column(
             children: [
-          Consumer<SharedTextModel>(
-          builder: (context, sharedTextModel, child) {
-            print(sharedTextModel.sharedText);
-            // Update the controller's text when sharedText changes
-            if (_controller.text != sharedTextModel.sharedText) {
-      _controller.text = sharedTextModel.sharedText;
-      }
-        return TextField(
-        controller: _controller,
-        decoration: InputDecoration(
-          hintText: "Enter a topic or link",
-          border: OutlineInputBorder(),
-        ),
-      );
-    },
-    ),
+              Consumer<SharedTextModel>(
+                builder: (context, sharedTextModel, child) {
+                  print(sharedTextModel.sharedText);
+                  // Update the controller's text when sharedText changes
+                  if (_controller.text != sharedTextModel.sharedText) {
+                    _controller.text = sharedTextModel.sharedText;
+                  }
+                  return TextField(
+                    controller: _controller,
+                    decoration: InputDecoration(
+                      hintText: "Enter a topic or link",
+                      border: OutlineInputBorder(),
+                    ),
+                  );
+                },
+              ),
               SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -173,50 +218,85 @@ class _SearchScreenState extends State<SearchScreen> {
                     return Center(child: Text(snapshot.error.toString()));
                   } else if (snapshot.hasData) {
                     final quiz = snapshot.data!;
-                    return Column(
-                      children: [
-                        // Use ListView.builder with shrinkWrap: true to prevent overflow
-                        ListView.builder(
-                          shrinkWrap: true,  // This allows the ListView to take up only the necessary space
-                          physics: NeverScrollableScrollPhysics(),  // Disable scrolling within this ListView to allow the parent scroll to work
-                          itemCount: quiz.questions.length,
-                          itemBuilder: (context, index) {
-                            final question = quiz.questions[index];
-                            return Card(
-                              margin: EdgeInsets.symmetric(vertical: 10),
-                              child: Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      question.questionText,
-                                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                    ),
-                                    ...question.answerChoices.map((choice) {
-                                      return RadioListTile<String>(
-                                        title: Text(choice),
-                                        value: choice,
-                                        groupValue: question.userAnswer,
-                                        onChanged: (value) {
-                                          setState(() {
-                                            question.userAnswer = value;  // Update the user's answer
-                                          });
-                                        },
-                                      );
-                                    }).toList(),
-                                  ],
+                    return SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start, // Align text/questions properly
+                        children: [
+                          ListView.builder(
+                            shrinkWrap: true, // Allows ListView to take only required space
+                            physics: NeverScrollableScrollPhysics(), // Disable internal scrolling
+                            itemCount: quiz.questions.length,
+                            itemBuilder: (context, index) {
+                              final question = quiz.questions[index];
+                              return Card(
+                                margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                                child: Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "Q${index + 1}: ${question.questionText}",
+                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                      ),
+                                      ...question.answerChoices.map((choice) {
+                                        return RadioListTile<String>(
+                                          title: Text(choice),
+                                          value: choice,
+                                          groupValue: question.userAnswer,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              question.userAnswer = value;  // Update user answer
+                                            });
+                                          },
+                                        );
+                                      }).toList(),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                        SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _checkAnswers,  // Call the check answers function on press
-                          child: Text("Submit"),
-                        ),
-                      ],
+                              );
+                            },
+                          ),
+                          SizedBox(height: 20),
+
+                          // Buttons aligned properly
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Wrap(
+                              spacing: 10, // Horizontal spacing between buttons
+                              runSpacing: 10, // Vertical spacing between rows of buttons
+                              alignment: WrapAlignment.center,
+                              children: [
+                                ElevatedButton(
+                                  onPressed: _checkAnswers,
+                                  child: Text("Submit"),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      quizResponse = null; // Reset quiz state
+                                      _fetchData("1"); // Re-fetch with default difficulty
+                                    });
+                                  },
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                                  child: Text("Restart Quiz"),
+                                ),
+                                ElevatedButton(
+                                  onPressed: _shareResults,
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                                  child: Text("Share Results"),
+                                ),
+                                ElevatedButton(
+                                  onPressed: _exportToPDF,
+                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                  child: Text("Export PDF"),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 20),
+                        ],
+                      ),
                     );
                   }
                   return Center(child: Text("No quiz data available."));
