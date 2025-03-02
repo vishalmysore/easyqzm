@@ -11,6 +11,7 @@ import 'dart:convert';
 import '../model/performanceupdate.dart';
 import '../model/user.dart';
 import '../model/userperformance.dart';
+import '../model/userupdate.dart';
 
 final GoogleSignIn _googleSignIn = GoogleSignIn(
   scopes: ['openid', 'email', 'profile'],
@@ -23,6 +24,7 @@ class UserProfileScreen extends StatefulWidget {
 
   const UserProfileScreen({Key? key, required this.user}) : super(key: key);
 
+
   @override
   _UserProfileScreenState createState() => _UserProfileScreenState();
 }
@@ -32,6 +34,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   List<String> notifications = [];
   List<String> challenges = [];
 
+  final apiService = ApiService();
 
   @override
   void initState() {
@@ -193,11 +196,12 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
         // Store the access token if needed for API calls
         // You might send the ID Token to your backend for verification
-
+        User? user = await apiService.sendTokenToBackend(accessToken!,context.read<UserUpdate>());
         setState(() {
-          // widget.user.name = googleUser.displayName ?? "Unknown User";
-          // widget.user.emailId = googleUser.email;
-          // widget.user.avatar = googleUser.photoUrl ?? "";
+
+         //  widget.user.name = user?.userId ?? "Unknown User";
+         //  widget.user.emailId = user?.emailId;
+        //   widget.user.avatar = user?.avatar ?? "";
         });
       }
     } catch (error) {

@@ -4,7 +4,9 @@ import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 import 'package:easyqzm/model/performanceupdate.dart';
 import 'package:easyqzm/model/userupdate.dart';
 import 'package:easyqzm/service/sse_service.dart';
+import 'package:easyqzm/service/storage_service.dart';
 import 'package:easyqzm/sharing/sharing.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:app_links/app_links.dart'; // Import uni_links for deep linking
@@ -52,6 +54,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
   static final  platform = MethodChannel('com.easyqzm/sharing');
+  final storageService = StorageService();
   String? sharedText;
   StreamSubscription? _sub;
 
@@ -59,6 +62,7 @@ class _MyAppState extends State<MyApp> {
   @override
    initState()  {
     super.initState();
+    Icon(CupertinoIcons.add);
     _extractUrlParameters();
     setUserandNotifier();
     //_initUniLinks(); // Initialize deep linking
@@ -79,15 +83,15 @@ class _MyAppState extends State<MyApp> {
   Future<void> _setupUser() async{
     var faker = Faker();
 
-    String? storedUsername = window.localStorage['username'];
-    String? jwtToken = window.localStorage['jwtToken'];
+    String? storedUsername = await storageService.retrieve(key: 'username');
+    String? jwtToken = await storageService.retrieve(key:'jwtToken');
     print(jwtToken);
     // If not, generate a new one and store it
     if((jwtToken == null) || await  isTokenExpired(jwtToken)) {
       storedUsername = faker.internet.userName();
       await createNewUser(storedUsername,context.read<UserUpdate>());
-      window.localStorage['username'] = storedUsername;
-      window.sessionStorage['username'] = storedUsername;
+      await storageService.store(key: 'username', value: storedUsername);
+
     } else {
       await  loadUserFromStorage(context.read<UserUpdate>());
     }
@@ -185,7 +189,7 @@ class _MyAppState extends State<MyApp> {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home:  MyHomePage(title: 'AI Powered Education'),
+      home:  MyHomePage(title: 'AI Deep Research Agent for Education'),
 
     );
   }

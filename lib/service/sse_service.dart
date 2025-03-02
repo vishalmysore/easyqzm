@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:easyqzm/service/storage_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
@@ -7,6 +8,7 @@ import 'package:universal_html/html.dart';
 
 import '../model/performanceupdate.dart';
 class SSEService {
+  final storageService = StorageService();
   final String baseURL = kReleaseMode
       ? 'https://vishalmysore-easyqserver.hf.space/bs/'  // Production URL
       : 'http://localhost:7860/bs/';  // Local development URL
@@ -20,8 +22,8 @@ class SSEService {
 
 
   // Start Listening to SSE Events
-  void connect(PerformanceUpdate notifier) {
-    final String? token = window.localStorage['jwtToken'];
+  Future<void> connect(PerformanceUpdate notifier) async {
+    final String? token = await storageService.retrieve(key: 'jwtToken');
     final url = '${baseURL}broadcast?token=$token';
     performanceUpdate =notifier;
     SSEClient.subscribeToSSE(

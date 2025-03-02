@@ -62,9 +62,9 @@ class _MyHomePageState extends State<MyHomePage> {
               return Stack(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.notifications),
+                    icon: const Icon(CupertinoIcons.bell),
                     onPressed: () {
-                      print("Notifications tapped");
+                    //  print("Notifications tapped");
                       // You can reset count or show notifications here
                       userUpdate.clearNotifications();
                     },

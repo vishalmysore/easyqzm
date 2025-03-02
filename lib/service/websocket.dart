@@ -1,15 +1,18 @@
 import 'dart:async';
+import 'package:easyqzm/service/storage_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:universal_html/html.dart';
 class WebSocketService {
   final Map<String, WebSocketChannel> _channels = {}; // Store WebSocket connections by endpoint
   final Map<String, StreamController> _messageControllers = {}; // Store StreamControllers for each connection
+  final storageService = StorageService();
+
 
   // Connect to a WebSocket endpoint
-  Stream<dynamic> connect(String endpoint) {
+  Future<Stream> connect(String endpoint) async {
 
-    final String? token = window.localStorage['jwtToken'];
+    final String? token = await storageService.retrieve(key: 'jwtToken');
     final String wsUrl = kReleaseMode
         ? 'wss://vishalmysore-easyqserver.hf.space/ws/'  // Production WebSocket URL
         : 'ws://localhost:7860/ws/';  // Local WebSocket URL

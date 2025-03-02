@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 class TopAuthorsPage extends StatelessWidget {
   final List<Author> authors = [
     Author(
-      name: "John Doe",
+      name: "Mike Gallo",
       topics: ["AI", "Flutter", "Cybersecurity"],
       highestScore: 98,
       bio: "Tech enthusiast, AI researcher, and Flutter expert.",
       imageUrl: "https://i.pravatar.cc/150?img=14",
     ),
     Author(
-      name: "Jane Smith",
+      name: "John Armanda",
       topics: ["Data Science", "Quantum Computing"],
       highestScore: 95,
       bio: "Passionate about data and the future of computing.",

@@ -1,18 +1,21 @@
 import 'dart:convert';
 
 import 'package:easyqzm/model/userupdate.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:universal_html/html.dart' hide Text,Navigator;
+
+import '../service/storage_service.dart';
 class User {
   final String userId;
-  final String? emailId;
-  final String name;
-  final String avatar;
-  final List<String> expertTopics;
-  final List<String> achievements;
-  final bool isPermanent;
-  final List<dynamic> articles;
+  late final String? emailId;
+  late final String name;
+  late final String avatar;
+  late final List<String> expertTopics;
+  late final List<String> achievements;
+  late final bool isPermanent;
+  late final List<dynamic> articles;
 
   User({
     required this.userId,
@@ -51,10 +54,10 @@ class User {
     );
   }
 }
-
+final storageService = StorageService();
 Future<void> loadUserFromStorage(UserUpdate userUpdate) async {
   // Retrieve the JSON string from local storage
-  String? userJson = window.localStorage['user'];
+  String? userJson = await storageService.retrieve(key: 'user');
 
   if (userJson != null) {
     try {
@@ -76,10 +79,9 @@ Future<void> loadUserFromStorage(UserUpdate userUpdate) async {
 
 
 Future<User> createNewUser(String username, UserUpdate userUpdte) async {
- final String apiUrl = const String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:7860/api/',  // Default for local environment
-  );
+  final String apiUrl = kReleaseMode
+      ? 'https://vishalmysore-easyqserver.hf.space/api/'  // Production
+      : 'http://localhost:7860/api/';
 
 
   // Generate user object
@@ -107,12 +109,15 @@ Future<User> createNewUser(String username, UserUpdate userUpdte) async {
     if (response.statusCode == 200) {
 
       String: var userStr = jsonEncode(user.toJson());
-      window.localStorage['user'] =userStr;
+      //window.localStorage['user'] =userStr;
+      await storageService.store(key: 'user', value: userStr);
       // Success, handle response if necessary
       final responseData = json.decode(response.body);
       String token = responseData['token'];
       // Store the token in localStorage
-      window.localStorage['jwtToken'] = token;
+      //window.localStorage['jwtToken'] = token;
+      await storageService.store(key: 'jwtToken', value: token);
+      user.emailId = responseData['emailId'];
       userUpdte.setUser(user);
       print("Token stored in localStorage: $token");
     } else {
