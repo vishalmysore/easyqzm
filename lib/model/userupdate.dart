@@ -16,16 +16,15 @@ class UserUpdate with ChangeNotifier {
 
   User? get user => _user;
   int get notificationCount => _notificationCount;
-
   void signedUser(User? newUser) async {
     _user = newUser;
     notifyListeners();
   }
-  void setUser(User? newUser) async {
+  void setUser(User? newUser,String token) {
     _user = newUser;
 
     _wsService = WebSocketService();  // Initialize WebSocket service
-    _scoreStream = await _wsService.connect('score'); // Connect to WebSocket stream
+    _scoreStream = _wsService.connect('score',token); // Connect to WebSocket stream
 
     _scoreSubscription = _scoreStream.listen((message) {
       print('Score update: $message');

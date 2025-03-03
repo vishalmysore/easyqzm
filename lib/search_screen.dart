@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:easyqzm/model/user.dart';
 import 'package:easyqzm/service/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -33,25 +32,21 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _controller = TextEditingController();
 
   final ApiService apiService = ApiService();
-  Future<QuizResponse>? quizResponse;
   final storageService = StorageService();
-  //final String? userId = window.localStorage['username'];
-   String? userId;
-
-  late  String userInput;
+  Future<QuizResponse>? quizResponse;
+  String? userId;
 
   @override
   void initState() {
-  super.initState();
-  _loadUserId();
+    super.initState();
+    _fetchUserId(); // Fetch user ID asynchronously
+  }
+  Future<void> _fetchUserId() async {
+    userId = await storageService.retrieve(key: 'jwtToken');
+    setState(() {}); // Trigger UI update after fetching userId
   }
 
-  Future<void> _loadUserId() async {
-  String? storedUserId = await storageService.retrieve(key: 'username');
-  setState(() {
-  userId = storedUserId;
-  });
-  }
+  late  String userInput;
 
   @override
   void dispose() {
@@ -193,7 +188,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     print("building search screen ${widget.text}");
     return  LoaderOverlay ( child: Scaffold(
-      appBar: AppBar(title: Text("Create Custom Quiz")),
+       appBar: AppBar(title: Text("Create Custom Quiz")),
       body: SingleChildScrollView(  // Wrap the entire body in SingleChildScrollView
         child: Padding(
           padding: EdgeInsets.all(16.0),
@@ -203,14 +198,13 @@ class _SearchScreenState extends State<SearchScreen> {
                 builder: (context, sharedTextModel, child) {
                   print(sharedTextModel.sharedText);
                   // Update the controller's text when sharedText changes
-                  // Ensure text does not exceed 200 characters
-                  if (_controller.text != sharedTextModel.sharedText) {
+               if (_controller.text != sharedTextModel.sharedText) {
                     _controller.text = sharedTextModel.sharedText.substring(0,
                         sharedTextModel.sharedText.length > 200 ? 200 : sharedTextModel.sharedText.length);
                   }
                   return TextField(
                     controller: _controller,
-                    maxLength: 200,
+                     maxLength: 200,
                     decoration: InputDecoration(
                       hintText: "Enter a topic or link",
                       border: OutlineInputBorder(),

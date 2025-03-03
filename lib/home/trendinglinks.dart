@@ -19,6 +19,7 @@ class TrendingLinksTabState extends State<TrendingLinksTab> {
   }
 
   void _fetchLinks() {
+
     setState(() {
       _trendingLinksFuture = _showLastHour
           ? ApiService().getTrendingLastHour()

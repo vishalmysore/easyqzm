@@ -19,11 +19,11 @@ class PerformanceUpdate with ChangeNotifier {
   List<Map<String, dynamic>> _notifications = [];
 
   List<Map<String, dynamic>> get notifications => _notifications;
-  void setPerformance(UserPerformance perf) async{
+  void setPerformance(UserPerformance perf,String token) {
     this._performance = perf;
     notifyListeners();
     _wsService = WebSocketService();  // Initialize WebSocket service
-    _scoreStream = await _wsService.connect('challenges'); // Connect to WebSocket stream
+    _scoreStream = _wsService.connect('challenges',token); // Connect to WebSocket stream
 
     _scoreSubscription = _scoreStream.listen((message) {
       print('challenge received update: $message');

@@ -1,8 +1,6 @@
 
 
 import 'package:easyqzm/model/userperformance.dart';
-import 'package:easyqzm/model/userupdate.dart';
-import 'package:easyqzm/service/storage_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -13,20 +11,9 @@ import '../model/link.dart';
 import '../model/question.dart';
 import '../model/score.dart';
 import '../model/user.dart';
-
+import '../model/userupdate.dart';
 
 class ApiService {
-  final StorageService storageService = StorageService();
-
-
-  ApiService() {
-
-  }
-
-  Future<String?> getToken() async {
-    String? token = await storageService.retrieve(key: 'jwtToken');
-    return token;
-  }
   final String apiUrl = kReleaseMode
       ? 'https://vishalmysore-easyqserver.hf.space/api/'  // Production
       : 'http://localhost:7860/api/';  // Local
@@ -34,13 +21,12 @@ class ApiService {
   final String authUrl = kReleaseMode
       ? 'https://vishalmysore-easyqserver.hf.space/auth/'  // Production
       : 'http://localhost:7860/auth/';
-
-
-
+  String? token;
+  
   Future<User?> sendTokenToBackend(String tokenAccess, UserUpdate userUpdate) async {
     try {
       // Retrieve JWT token from secure storage
-      String? token = await getToken();
+      await fetchToken();
 
       // Determine if it's a new user
       bool newUser = token == null;
@@ -100,12 +86,16 @@ class ApiService {
     return null;
   }
 
-  // Fetch the token from localStorage
 
+  // Fetch the token from localStorage
+  Future<void> fetchToken() async {
+    // Only fetch token if it's not already set
+    token ??= await storageService.retrieve(key: "jwtToken");
+  }
 
   // Fetch questions based on user input and difficulty
   Future<QuizResponse> fetchQuestions(String userInput, String difficulty) async {
-    String? token = await getToken();
+    await fetchToken();
     print("Token stored in fetching localStorage: $token");
     // Make sure to add the token to the headers if it's available
     final response = await http.get(
@@ -126,7 +116,7 @@ class ApiService {
   }
 
   Future<UserPerformance?> fetchUserPerformance() async {
-    String? token = await getToken();
+    await fetchToken();
     final url = Uri.parse('${apiUrl}getUserAnalytics');
 
     try {
@@ -152,7 +142,7 @@ class ApiService {
 
 
   Future<void> submitScore(Score score) async {
-    String? token = await getToken();
+    await fetchToken();
 
     try {
       final response = await http.post(
@@ -173,7 +163,7 @@ class ApiService {
 
 
   Future<List<Link>> getTrendingLastHour() async {
-    String? token = await getToken();
+    await fetchToken();
     final url = Uri.parse('${apiUrl}getTrendingLastHour');
 
     try {
@@ -202,7 +192,7 @@ class ApiService {
 
 
   Future<List<Link>> getTrendingLastAll() async {
-    String? token = await getToken();
+    await fetchToken();
     final url = Uri.parse('${apiUrl}getTrendingAll');
 
     try {

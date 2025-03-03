@@ -1,21 +1,20 @@
 import 'dart:convert';
 
 import 'package:easyqzm/model/userupdate.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:universal_html/html.dart' hide Text,Navigator;
 
 import '../service/storage_service.dart';
 class User {
-  final String userId;
-  late final String? emailId;
-  late final String name;
-  late final String avatar;
-  late final List<String> expertTopics;
-  late final List<String> achievements;
-  late final bool isPermanent;
-  late final List<dynamic> articles;
+   String userId;
+    String? emailId;
+    String name;
+    String avatar;
+    List<String> expertTopics;
+    List<String> achievements;
+    bool isPermanent;
+    List<dynamic> articles;
 
   User({
     required this.userId,
@@ -28,6 +27,9 @@ class User {
     required this.articles,
   });
 
+  setEmailId(String emailIdStr) {
+    this.emailId = emailIdStr;
+  }
   // Convert the User object into a map (for sending in the POST request)
   Map<String, dynamic> toJson() {
     return {
@@ -54,11 +56,13 @@ class User {
     );
   }
 }
-final storageService = StorageService();
+
 Future<void> loadUserFromStorage(UserUpdate userUpdate) async {
   // Retrieve the JSON string from local storage
+ // String? userJson = window.localStorage['user'];
+ // String? jwtToken = window.localStorage['jwtToken'];
   String? userJson = await storageService.retrieve(key: 'user');
-
+  String? jwtToken = await storageService.retrieve(key: 'jwtToken');
   if (userJson != null) {
     try {
       // Decode the JSON string into a map
@@ -68,7 +72,7 @@ Future<void> loadUserFromStorage(UserUpdate userUpdate) async {
       User user = User.fromJson(userMap);
 
       // Update the UserUpdate provider with the new User object
-      userUpdate.setUser(user);
+      userUpdate.setUser(user,jwtToken!);
     } catch (e) {
       print('Error decoding user JSON: $e');
     }
@@ -77,11 +81,12 @@ Future<void> loadUserFromStorage(UserUpdate userUpdate) async {
   }
 }
 
-
+final storageService = StorageService();
 Future<User> createNewUser(String username, UserUpdate userUpdte) async {
-  final String apiUrl = kReleaseMode
-      ? 'https://vishalmysore-easyqserver.hf.space/api/'  // Production
-      : 'http://localhost:7860/api/';
+ final String apiUrl = const String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:7860/api/',  // Default for local environment
+  );
 
 
   // Generate user object
@@ -109,17 +114,19 @@ Future<User> createNewUser(String username, UserUpdate userUpdte) async {
     if (response.statusCode == 200) {
 
       String: var userStr = jsonEncode(user.toJson());
-      //window.localStorage['user'] =userStr;
-      await storageService.store(key: 'user', value: userStr);
+    //  window.localStorage['user'] =userStr;
+
+      await storageService.store(key:'user',value: userStr);
       // Success, handle response if necessary
       final responseData = json.decode(response.body);
       String token = responseData['token'];
+      print(responseData['emailId']);
+     user.setEmailId(responseData['emailId']);
       // Store the token in localStorage
-      //window.localStorage['jwtToken'] = token;
-      await storageService.store(key: 'jwtToken', value: token);
-      user.emailId = responseData['emailId'];
-      userUpdte.setUser(user);
-      print("Token stored in localStorage: $token");
+     // window.localStorage['jwtToken'] = token;
+      await storageService.store(key:'jwtToken',value: token);
+      userUpdte.setUser(user,token);
+
     } else {
       // Handle error response
       print('Failed to create user: ${response.body}');

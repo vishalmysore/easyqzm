@@ -76,11 +76,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> setUserandNotifier() async {
-    await _setupUser();
-    setNotifier();
+    String? token = await _setupUser();
+    setNotifier(token!);
   }
 
-  Future<void> _setupUser() async{
+  Future<String?> _setupUser() async{
     var faker = Faker();
 
     String? storedUsername = await storageService.retrieve(key: 'username');
@@ -95,13 +95,26 @@ class _MyAppState extends State<MyApp> {
     } else {
       await  loadUserFromStorage(context.read<UserUpdate>());
     }
+    jwtToken = await storageService.retrieve(key:'jwtToken');
+    return jwtToken;
 
   }
 
-  void setNotifier() {
-    SSEService _sseService = SSEService();
-    _sseService.connect(context.read<PerformanceUpdate>());
+  void setNotifier(String tokenStr) {
+    SSEService _sseService = SSEService(token: tokenStr);
+
+
+    try {
+      _sseService.connect(context.read<PerformanceUpdate>(),tokenStr);
+      print(" Called _sseService.connect()");
+    } catch (error, stackTrace) {
+      print(" Exception in setNotifier: $error");
+      print(stackTrace);
+    }
+
+
   }
+
 
   Future<bool> isTokenExpired(String? token) async {
     if (token == null) {

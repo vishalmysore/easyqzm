@@ -24,7 +24,6 @@ class UserProfileScreen extends StatefulWidget {
 
   const UserProfileScreen({Key? key, required this.user}) : super(key: key);
 
-
   @override
   _UserProfileScreenState createState() => _UserProfileScreenState();
 }
@@ -33,7 +32,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   UserPerformance? userPerformance;
   List<String> notifications = [];
   List<String> challenges = [];
-
+  late bool isUserChanged = false;
   final apiService = ApiService();
 
   @override
@@ -199,9 +198,10 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         User? user = await apiService.sendTokenToBackend(accessToken!,context.read<UserUpdate>());
         setState(() {
 
-         //  widget.user.name = user?.userId ?? "Unknown User";
-         //  widget.user.emailId = user?.emailId;
-        //   widget.user.avatar = user?.avatar ?? "";
+           widget.user.name = user?.userId ?? "Unknown User";
+           widget.user.emailId = user?.emailId;
+           widget.user.avatar = user?.avatar ?? "";
+           isUserChanged = true;
         });
       }
     } catch (error) {

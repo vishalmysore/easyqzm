@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:easyqzm/service/storage_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
@@ -8,11 +7,10 @@ import 'package:universal_html/html.dart';
 
 import '../model/performanceupdate.dart';
 class SSEService {
-  final storageService = StorageService();
   final String baseURL = kReleaseMode
       ? 'https://vishalmysore-easyqserver.hf.space/bs/'  // Production URL
       : 'http://localhost:7860/bs/';  // Local development URL
-
+  final String? token;
 
   // Fetch the token from localStorage
 
@@ -20,10 +18,11 @@ class SSEService {
   StreamSubscription<SSEModel>? _sseSubscription;
   late PerformanceUpdate performanceUpdate;
 
+  SSEService({required this.token}){}
 
   // Start Listening to SSE Events
-  Future<void> connect(PerformanceUpdate notifier) async {
-    final String? token = await storageService.retrieve(key: 'jwtToken');
+  void connect(PerformanceUpdate notifier, String? token) {
+    //final String? token = window.localStorage['jwtToken'];
     final url = '${baseURL}broadcast?token=$token';
     performanceUpdate =notifier;
     SSEClient.subscribeToSSE(
@@ -45,7 +44,7 @@ class SSEService {
   void reconnect() {
     Future.delayed(Duration(seconds: 5), () {
       print('Reconnecting to SSE...');
-      connect(performanceUpdate);
+      connect(performanceUpdate,this.token);
     });
   }
 
