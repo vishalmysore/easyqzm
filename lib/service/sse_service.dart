@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_client_sse/constants/sse_request_type_enum.dart';
 import 'package:flutter_client_sse/flutter_client_sse.dart';
 import 'package:universal_html/html.dart';
-
+import '../util/debug.dart' as debug;
 import '../model/performanceupdate.dart';
 class SSEService {
   final String baseURL = kReleaseMode
@@ -33,9 +33,9 @@ class SSEService {
           "Cache-Control": "no-cache",
         }).listen(
             (event) {
-          print('Id: ' + (event.id ?? ""));
-          print('Event: ' + (event.event ?? ""));
-          print('Data: ' + (event.data ?? ""));
+          debug.d('Id: ' + (event.id ?? ""));
+          debug.d('Event: ' + (event.event ?? ""));
+          debug.d('Data: ' + (event.data ?? ""));
           notifier.updated(event);
         });
   }
@@ -43,7 +43,7 @@ class SSEService {
   // Reconnect on failure
   void reconnect() {
     Future.delayed(Duration(seconds: 5), () {
-      print('Reconnecting to SSE...');
+      debug.d('Reconnecting to SSE...');
       connect(performanceUpdate,this.token);
     });
   }
@@ -52,7 +52,7 @@ class SSEService {
   void disconnect() {
     _sseSubscription?.cancel();
     _streamController.close();
-    print('SSE Disconnected');
+    debug.d('SSE Disconnected');
   }
 
   // Expose SSE stream to listen for events

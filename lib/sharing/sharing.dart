@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import '../util/debug.dart' as debug;
 class ShareUrlScreen extends StatefulWidget {
   final String? sharedUrl;
   const ShareUrlScreen({Key? key, required this.sharedUrl}) : super(key: key);
@@ -17,7 +17,7 @@ class _ShareUrlScreenState extends State<ShareUrlScreen> {
   void initState() {
     super.initState();
     // Logic to check for URL passed (e.g., from deep linking)
-     print("here in sharing");
+     debug.d("here in sharing");
     //_handleSharedUrl();
   }
 
@@ -29,10 +29,10 @@ class _ShareUrlScreenState extends State<ShareUrlScreen> {
       final response = await http.get(Uri.parse("https://backendapi.com/article?url=$url"));
       if (response.statusCode == 200) {
         // Process the response (e.g., show quiz options)
-        print('Fetched data: ${response.body}');
+        debug.d('Fetched data: ${response.body}');
       } else {
         // Handle error
-        print('Failed to load article');
+        debug.d('Failed to load article');
       }
     }
   }

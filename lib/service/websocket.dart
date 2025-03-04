@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:universal_html/html.dart';
+import '../util/debug.dart' as debug;
 class WebSocketService {
   final Map<String, WebSocketChannel> _channels = {}; // Store WebSocket connections by endpoint
   final Map<String, StreamController> _messageControllers = {}; // Store StreamControllers for each connection
@@ -15,7 +16,7 @@ class WebSocketService {
         : 'ws://localhost:7860/ws/';  // Local WebSocket URL
 
     if (_channels.containsKey(endpoint)) {
-      print('Already connected to $endpoint');
+      debug.d('Already connected to $endpoint');
       return _messageControllers[endpoint]!.stream;
     }
 
@@ -26,15 +27,15 @@ class WebSocketService {
 
     socket.stream.listen(
           (message) {
-        print('Message received from $endpoint: $message');
+        debug.d('Message received from $endpoint: $message');
         _messageControllers[endpoint]!.sink.add(message); // Emit the received message
       },
       onError: (error) {
-        print('WebSocket error for $endpoint: $error');
+        debug.d('WebSocket error for $endpoint: $error');
         _messageControllers[endpoint]!.sink.addError(error); // Emit error
       },
       onDone: () {
-        print('WebSocket connection closed for $endpoint');
+        debug.d('WebSocket connection closed for $endpoint');
         _messageControllers[endpoint]!.close(); // Close the stream controller
         _channels.remove(endpoint);
         _messageControllers.remove(endpoint);
@@ -49,9 +50,9 @@ class WebSocketService {
     final socket = _channels[endpoint];
     if (socket != null && socket.closeCode == null) { // If connected and the socket is open
       socket.sink.add(message);
-      print('Message sent to $endpoint: $message');
+      debug.d('Message sent to $endpoint: $message');
     } else {
-      print('WebSocket not connected to $endpoint');
+      debug.d('WebSocket not connected to $endpoint');
     }
   }
 
@@ -63,7 +64,7 @@ class WebSocketService {
       _channels.remove(endpoint);
       _messageControllers[endpoint]?.close();
       _messageControllers.remove(endpoint);
-      print('WebSocket connection closed for $endpoint');
+      debug.d('WebSocket connection closed for $endpoint');
     }
   }
 }

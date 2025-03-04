@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import '../util/debug.dart' as debug;
 import 'package:easyqzm/service/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -186,7 +186,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
   @override
   Widget build(BuildContext context) {
-    print("building search screen ${widget.text}");
+    debug.d("building search screen ${widget.text}");
     return  LoaderOverlay ( child: Scaffold(
        appBar: AppBar(title: Text("Create Custom Quiz")),
       body: SingleChildScrollView(  // Wrap the entire body in SingleChildScrollView
@@ -196,7 +196,7 @@ class _SearchScreenState extends State<SearchScreen> {
             children: [
               Consumer<SharedTextModel>(
                 builder: (context, sharedTextModel, child) {
-                  print(sharedTextModel.sharedText);
+                  debug.d(sharedTextModel.sharedText);
                   // Update the controller's text when sharedText changes
                if (_controller.text != sharedTextModel.sharedText) {
                     _controller.text = sharedTextModel.sharedText.substring(0,

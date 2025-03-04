@@ -1,10 +1,11 @@
 import 'dart:convert';
 
 import 'package:easyqzm/model/userupdate.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:universal_html/html.dart' hide Text,Navigator;
-
+import '../util/debug.dart' as debug;
 import '../service/storage_service.dart';
 class User {
    String userId;
@@ -74,19 +75,18 @@ Future<void> loadUserFromStorage(UserUpdate userUpdate) async {
       // Update the UserUpdate provider with the new User object
       userUpdate.setUser(user,jwtToken!);
     } catch (e) {
-      print('Error decoding user JSON: $e');
+      debug.d('Error decoding user JSON: $e');
     }
   } else {
-    print('No user data found in local storage.');
+    debug.d('No user data found in local storage.');
   }
 }
 
 final storageService = StorageService();
 Future<User> createNewUser(String username, UserUpdate userUpdte) async {
- final String apiUrl = const String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://localhost:7860/api/',  // Default for local environment
-  );
+  final String apiUrl = kReleaseMode
+      ? 'https://vishalmysore-easyqserver.hf.space/api/'  // Production
+      : 'http://localhost:7860/api/';
 
 
   // Generate user object
@@ -120,7 +120,7 @@ Future<User> createNewUser(String username, UserUpdate userUpdte) async {
       // Success, handle response if necessary
       final responseData = json.decode(response.body);
       String token = responseData['token'];
-      print(responseData['emailId']);
+      debug.d(responseData['emailId']);
      user.setEmailId(responseData['emailId']);
       // Store the token in localStorage
      // window.localStorage['jwtToken'] = token;
@@ -129,10 +129,10 @@ Future<User> createNewUser(String username, UserUpdate userUpdte) async {
 
     } else {
       // Handle error response
-      print('Failed to create user: ${response.body}');
+      debug.d('Failed to create user: ${response.body}');
     }
   } catch (e) {
-    print('Error: $e');
+    debug.d('Error: $e');
   }
 
   return user;

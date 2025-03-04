@@ -8,6 +8,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_client_sse/flutter_client_sse.dart';
 
 import '../service/websocket.dart';
+import '../util/debug.dart' as debug;
 
 class PerformanceUpdate with ChangeNotifier {
   User? _user;
@@ -26,7 +27,7 @@ class PerformanceUpdate with ChangeNotifier {
     _scoreStream = _wsService.connect('challenges',token); // Connect to WebSocket stream
 
     _scoreSubscription = _scoreStream.listen((message) {
-      print('challenge received update: $message');
+      debug.d('challenge received update: $message');
       notifyListeners();
     });
 
@@ -48,7 +49,7 @@ class PerformanceUpdate with ChangeNotifier {
           _addNotification(data);
         }
       } catch (e) {
-        print("Error parsing notification: $e");
+        debug.d("Error parsing notification: $e");
       }
     }
   }

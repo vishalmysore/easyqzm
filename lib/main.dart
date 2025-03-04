@@ -12,7 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:app_links/app_links.dart'; // Import uni_links for deep linking
 import 'dart:async';
 import 'package:flutter/services.dart';
-
+import '../util/debug.dart' as debug;
 
 import 'app/homescreen.dart';
 import 'home_screen.dart'; // Import the HomeScreen
@@ -69,7 +69,7 @@ class _MyAppState extends State<MyApp> {
     platform.setMethodCallHandler((call) async {
       if (call.method == 'sharedText') {
         final String text = call.arguments;
-        print("text here $text");
+        debug.d("text here $text");
        updateSharedText(text);
       }
     });
@@ -85,7 +85,7 @@ class _MyAppState extends State<MyApp> {
 
     String? storedUsername = await storageService.retrieve(key: 'username');
     String? jwtToken = await storageService.retrieve(key:'jwtToken');
-    print(jwtToken);
+    debug.d(jwtToken.toString());
     // If not, generate a new one and store it
     if((jwtToken == null) || await  isTokenExpired(jwtToken)) {
       storedUsername = faker.internet.userName();
@@ -106,10 +106,10 @@ class _MyAppState extends State<MyApp> {
 
     try {
       _sseService.connect(context.read<PerformanceUpdate>(),tokenStr);
-      print(" Called _sseService.connect()");
+      debug.d(" Called _sseService.connect()");
     } catch (error, stackTrace) {
-      print(" Exception in setNotifier: $error");
-      print(stackTrace);
+      debug.d(" Exception in setNotifier: $error");
+      debug.d(stackTrace.toString());
     }
 
 
@@ -161,7 +161,7 @@ class _MyAppState extends State<MyApp> {
           sharedText = data['articleUrl'];
         });
       } catch (e) {
-        print('Error decoding JSON: $e');
+        debug.d('Error decoding JSON: $e');
       }
     }else
     if (referringUrl != null) {
@@ -175,7 +175,7 @@ class _MyAppState extends State<MyApp> {
   void updateSharedText(String text) {
   //  final sharedTextModel = context.read<SharedTextModel>();
   //  sharedTextModel.updateSharedText(text);
-    print('shared text here in update $text');
+    debug.d('shared text here in update $text');
 
     sharedText=text;
     // Remove all previous screens and navigate to the new one

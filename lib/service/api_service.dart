@@ -12,7 +12,7 @@ import '../model/question.dart';
 import '../model/score.dart';
 import '../model/user.dart';
 import '../model/userupdate.dart';
-
+import '../util/debug.dart' as debug;
 class ApiService {
   final String apiUrl = kReleaseMode
       ? 'https://vishalmysore-easyqserver.hf.space/api/'  // Production
@@ -37,7 +37,7 @@ class ApiService {
         'newUser': newUser,
       };
 
-      print(requestBody);
+      debug.d(requestBody.toString());
 
       // Send POST request
       final response = await http.post(
@@ -51,7 +51,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         Map<String, dynamic> responseData = jsonDecode(response.body);
-        print('Token sent successfully: $responseData');
+        debug.d('Token sent successfully: $responseData');
 
         if (responseData.containsKey('jwtToken')) {
           // Save JWT token and user ID in secure storage
@@ -75,13 +75,13 @@ class ApiService {
          // UsernameService().updateUsername(responseData['userId']);
          // UsernameService().updateVerificationStatus(true);
 
-          print('JWT Token saved and new user ID is ${responseData['userId']}');
+          debug.d('JWT Token saved and new user ID is ${responseData['userId']}');
         }
       } else {
-        print('Error sending token: ${response.body}');
+        debug.d('Error sending token: ${response.body}');
       }
     } catch (error) {
-      print('Error sending token: $error');
+      debug.d('Error sending token: $error');
     }
     return null;
   }
@@ -96,7 +96,7 @@ class ApiService {
   // Fetch questions based on user input and difficulty
   Future<QuizResponse> fetchQuestions(String userInput, String difficulty) async {
     await fetchToken();
-    print("Token stored in fetching localStorage: $token");
+    debug.d("Token stored in fetching localStorage: $token");
     // Make sure to add the token to the headers if it's available
     final response = await http.get(
       Uri.parse('${apiUrl}getQuestions?prompt=$userInput&difficulty=$difficulty'),
@@ -131,11 +131,11 @@ class ApiService {
       if (response.statusCode == 200) {
         return UserPerformance.fromJson(json.decode(response.body));
       } else {
-        print('Failed to load user performance: ${response.statusCode}');
+        debug.d('Failed to load user performance: ${response.statusCode}');
         return null; // Return null in case of an error
       }
     } catch (e) {
-      print('Error fetching user performance: $e');
+      debug.d('Error fetching user performance: $e');
       return null; // Handle exceptions
     }
   }
@@ -152,12 +152,12 @@ class ApiService {
       );
 
       if (response.statusCode == 200) {
-        print('Score submitted successfully');
+        debug.d('Score submitted successfully');
       } else {
-        print('Failed to submit score: ${response.body}');
+        debug.d('Failed to submit score: ${response.body}');
       }
     } catch (e) {
-      print('Error submitting score: $e');
+      debug.d('Error submitting score: $e');
     }
   }
 
@@ -185,7 +185,7 @@ class ApiService {
         throw Exception('Failed to fetch trending links: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching trending links: $e');
+      debug.d('Error fetching trending links: $e');
       throw Exception('Failed to fetch trending links');
     }
   }
@@ -214,7 +214,7 @@ class ApiService {
         throw Exception('Failed to fetch trending links: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error fetching trending links: $e');
+      debug.d('Error fetching trending links: $e');
       throw Exception('Failed to fetch trending links');
     }
   }

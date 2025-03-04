@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import '../util/debug.dart' as debug;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:loader_overlay/loader_overlay.dart';
@@ -41,7 +41,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _help () {
-    print('clicked');
+    debug.d('clicked');
   }
 
 
@@ -64,7 +64,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   IconButton(
                     icon: const Icon(CupertinoIcons.bell),
                     onPressed: () {
-                    //  print("Notifications tapped");
+                    //  debug.d("Notifications tapped");
                       // You can reset count or show notifications here
                       userUpdate.clearNotifications();
                     },
@@ -178,7 +178,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   );
                 } else if (index == 2) {
                   if(currentUser != null) {
-                    print("Profile tapped for $currentUser");
+                    debug.d("Profile tapped for $currentUser");
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => UserProfileScreen(user: currentUser)),

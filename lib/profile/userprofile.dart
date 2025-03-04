@@ -7,7 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
+import '../util/debug.dart' as debug;
 import '../model/performanceupdate.dart';
 import '../model/user.dart';
 import '../model/userperformance.dart';
@@ -187,11 +187,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         final String? accessToken = googleAuth.accessToken;
         final String? idToken = googleAuth.idToken; // ID Token (useful for backend auth)
 
-        print("Signed in as: ${googleUser.displayName}");
-        print("Email: ${googleUser.email}");
-        print("Profile Picture: ${googleUser.photoUrl}");
-        print("Access Token: $accessToken");
-        print("ID Token: $idToken");
+        debug.d("Signed in as: ${googleUser.displayName}");
+        debug.d("Email: ${googleUser.email}");
+        debug.d("Profile Picture: ${googleUser.photoUrl}");
+        debug.d("Access Token: $accessToken");
+        debug.d("ID Token: $idToken");
 
         // Store the access token if needed for API calls
         // You might send the ID Token to your backend for verification
@@ -205,7 +205,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         });
       }
     } catch (error) {
-      print("Google Sign-In Error: $error");
+      debug.d("Google Sign-In Error: $error");
     }
   }
 
@@ -277,7 +277,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
 
 // Mock function for challenge action
   void _challengeUser(String userId) {
-    print("Challenge sent to $userId!");
+    debug.d("Challenge sent to $userId!");
   }
 
   // Section 3: Challenges

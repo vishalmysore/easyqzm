@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:easyqzm/model/user.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
-
+import '../util/debug.dart' as debug;
 import '../service/websocket.dart';
 
 class UserUpdate with ChangeNotifier {
@@ -27,7 +27,7 @@ class UserUpdate with ChangeNotifier {
     _scoreStream = _wsService.connect('score',token); // Connect to WebSocket stream
 
     _scoreSubscription = _scoreStream.listen((message) {
-      print('Score update: $message');
+      debug.d('Score update: $message');
       _notificationCount++;
       notifyListeners();
 
