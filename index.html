@@ -45,6 +45,12 @@
   <title>EasyQz</title>
 </head>
 <body>
-  <script src="flutter_bootstrap.js?v=${Date.now()}" async></script>
+  <script id="flutter-bootstrap" async></script>
+
+  <script>
+    // Dynamically inject the timestamp into the script src
+    const script = document.getElementById('flutter-bootstrap');
+    script.src = `flutter_bootstrap.js?v=${Date.now()}`;
+  </script>
 </body>
 </html>
