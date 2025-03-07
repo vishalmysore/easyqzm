@@ -45,20 +45,6 @@
   <title>EasyQz</title>
 </head>
 <body>
-<script>
-  // Get current date
-  const currentDate = new Date().toLocaleDateString();
-  
-  // Dynamically insert the date into the script source tag
-  const scriptTag = document.createElement('script');
-  scriptTag.src = "main.dart.js";
-  scriptTag.async = true;
-  scriptTag.onload = function() {
-    console.log('Script loaded on', currentDate);
-  };
-
-  // Append the script tag to the body
-  document.body.appendChild(scriptTag);
-</script>
+  <script src="main.dart.js?timestamp=${new Date().getTime()}" async></script>
 </body>
 </html>
