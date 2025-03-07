@@ -45,6 +45,12 @@
   <title>EasyQz</title>
 </head>
 <body>
-  <script src="main.dart.js?timestamp=${new Date().getTime()}" async></script>
+  <script>
+    // Set the script source dynamically with a timestamp
+    var script = document.createElement('script');
+    script.src = 'main.dart.js?timestamp=' + new Date().getTime();
+    script.async = true;
+    document.body.appendChild(script);
+  </script>
 </body>
 </html>
