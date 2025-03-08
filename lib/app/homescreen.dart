@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:easyqzm/app/news.dart';
+import 'package:easyqzm/app/sotryscreen.dart';
+import 'package:easyqzm/app/storytypes.dart';
+
 import '../util/debug.dart' as debug;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -55,7 +59,10 @@ class _MyHomePageState extends State<MyHomePage> {
     return    LoaderOverlay (child: Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
+        title: Text(
+          widget.title,
+          style: TextStyle(fontSize: 10), // Adjust the font size as needed
+        ),
         actions: <Widget>[
           Consumer<UserUpdate>(
             builder: (context, userUpdate, child) {
@@ -99,38 +106,123 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20), // Adds space from top
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.start, // Keeps elements at the top
+          crossAxisAlignment: CrossAxisAlignment.center, // Centers elements horizontally
           children: <Widget>[
-            const Text('Hit the Search Button to start Quiz:'),
-           // Text(
-           //   '$_counter',
-           //   style: Theme.of(context).textTheme.headlineMedium,
-           // ),
+            // Bandwidth warning message
+            Container(
+              width: double.infinity, // Ensures the container spans full width for centering text
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.only(bottom: 10),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade200,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  bool isSmallScreen = constraints.maxWidth < 350;
+                  return Text(
+                    isSmallScreen
+                        ? "⚠️ EasyQz is in pre-Beta with limited bandwidth.\nIt may be slow at times. 🐻 Please bear with us! ⚠️"
+                        : "⚠️ EasyQz is currently in pre-Beta and running on limited bandwidth and may be slow at times. 🐻 Please bear with us! ⚠️",
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  );
+                },
+              ),
+            ),
+
+            // Instruction text
+            LayoutBuilder(
+              builder: (context, constraints) {
+                bool isSmallScreen = constraints.maxWidth < 350;
+                return Text(
+                  isSmallScreen
+                      ? "Hit Search to start Quiz.\nOr click 'Read a story' or 'News':"
+                      : "Hit the Search Button to start Quiz or Click on 'Read a story' or 'News':",
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                );
+              },
+            ),
+
+            const SizedBox(height: 10),
+
+            // Shared Text Display
             Consumer<SharedTextModel>(
               builder: (context, sharedTextModel, child) {
                 return Text(
                   sharedTextModel.sharedText.isEmpty
-                      ? "No shared text"
+                      ? "No topic selected"
                       : sharedTextModel.sharedText,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
                 );
               },
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) => HelpScreen(),
-          );
-        },
-        tooltip: 'Help',
-        child: Icon(Icons.help),
+
+
+
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: "StoryScreen",
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => StoryScreen(type:"stories"),
+              );
+            },
+            tooltip: 'Tell me a Story',
+            child: Icon(CupertinoIcons.book),
+          ),
+          SizedBox(height: 16), // Spacing between buttons
+
+          FloatingActionButton(
+            heroTag: "NewsScreen",
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => NewsScreen(),
+              );
+            },
+            tooltip: 'Current News',
+            child: Icon(CupertinoIcons.news),
+          ),
+          SizedBox(height: 16), // Spacing between buttons
+          FloatingActionMenu(), // Using the custom FAB menu
+          SizedBox(height: 16), // Spacing between buttons
+          FloatingActionButton(
+            heroTag: "HelpScreen",
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => HelpScreen(),
+              );
+            },
+            tooltip: 'Help and Support',
+            child: Icon(Icons.chat_bubble),
+          ),
+          SizedBox(height: 16), // Spacing between buttons
+
+        ],
       ),
+
         bottomNavigationBar: Consumer<UserUpdate>(
 
           builder: (context, userUpdate, child) {

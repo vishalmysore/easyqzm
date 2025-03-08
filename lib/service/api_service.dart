@@ -1,5 +1,7 @@
 
 
+import 'dart:math';
+
 import 'package:easyqzm/model/userperformance.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -10,6 +12,7 @@ import 'package:universal_html/html.dart';
 import '../model/link.dart';
 import '../model/question.dart';
 import '../model/score.dart';
+import '../model/story.dart';
 import '../model/user.dart';
 import '../model/userupdate.dart';
 import '../util/debug.dart' as debug;
@@ -22,7 +25,125 @@ class ApiService {
       ? 'https://vishalmysore-easyqserver.hf.space/auth/'  // Production
       : 'http://localhost:7860/auth/';
   String? token;
-  
+
+  Future<http.Response?> sendContactUsData(Map<String, dynamic> contactUsData) async {
+    await fetchToken();
+    try {
+      final response = await http.post(
+          Uri.parse('${apiUrl}contactUs'), // Endpoint for contact-us
+
+        headers: {
+      'Content-Type': 'application/json',
+          'Authorization': token != null ? 'Bearer $token' : '',  // Add token if it's available
+        },
+        body: json.encode(contactUsData),
+      );
+
+     return response;
+    } catch (e) {
+      print('Error sending data: $e');
+      return null; // Return false on error
+    }
+  }
+
+  Future<Story?> fetchStory(String category) async {
+    await fetchToken();
+    List<String> storyTypes = ["horror", "comedy", "thriller", "drama", "history", "realistic"];
+    List<String> mathTypes = ["algebra", "geometry", "trigonometry", "calculus", "exponents", "percentage"];
+    List<String> scienceTypes = ["chemistry", "periodic table", "gravity", "speed", "volume and weight", "solar system"];
+    List<String> historyTypes = ["ancient civilizations", "medieval era", "world wars", "industrial revolution", "modern history", "renaissance"];
+    List<String> geographyTypes = ["continents and oceans", "mountains and rivers", "climate and weather", "maps and navigation", "natural disasters", "ecosystems"];
+    List<String> civicsTypes = ["constitution", "fundamental rights", "government branches", "elections and democracy", "law and justice", "public administration"];
+    List<String> indoorSports = [
+      "badminton",
+      "table tennis",
+      "chess",
+      "carrom",
+      "bowling",
+      "snooker",
+      "squash",
+      "fencing",
+      "gymnastics",
+      "boxing",
+      "weightlifting"
+    ];
+    List<String> outdoorSports = [
+      "football",
+      "cricket",
+      "basketball",
+      "tennis",
+      "golf",
+      "hockey",
+      "rugby",
+      "baseball",
+      "cycling",
+      "skiing",
+      "track and field",
+      "archery",
+      "rowing"
+    ];
+
+    String? randomSubcategory;
+    if (category == "stories") {
+      randomSubcategory = storyTypes[Random().nextInt(storyTypes.length)];
+    } else if (category == "math") {
+      randomSubcategory = mathTypes[Random().nextInt(mathTypes.length)];
+    } else if (category == "science") {
+      randomSubcategory = scienceTypes[Random().nextInt(scienceTypes.length)];
+    } else if (category == "history") {
+      randomSubcategory = historyTypes[Random().nextInt(historyTypes.length)];
+    } else if (category == "geography") {
+      randomSubcategory = geographyTypes[Random().nextInt(geographyTypes.length)];
+    } else if (category == "civics") {
+      randomSubcategory = civicsTypes[Random().nextInt(civicsTypes.length)];
+    } else if (category == "indoorSports") {
+      randomSubcategory = indoorSports[Random().nextInt(geographyTypes.length)];
+    } else if (category == "outdoorSports") {
+      randomSubcategory = outdoorSports[Random().nextInt(civicsTypes.length)];
+    }else {
+      randomSubcategory = "Unknown Category";
+    }
+    try {
+      final response = await http.get(Uri.parse('${apiUrl}getStory?category=${category}&storyType=$randomSubcategory'),headers: {
+
+        'Authorization': token != null ? 'Bearer $token' : '',  // Add token if it's available
+      });
+
+      if (response.statusCode == 200) {
+        Map<String, dynamic> jsonData = json.decode(response.body);
+        return Story.fromJson(jsonData);
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching story: $e');
+      return null;
+    }
+  }
+
+  Future<Story?> fetchNews() async {
+    await fetchToken();
+    List<String> storyTypes = ["world affairs", "sports", "cricket", "economy", "trading", "India","technology"];
+
+    // Select a random story type
+    String randomStoryType = storyTypes[Random().nextInt(storyTypes.length)];
+    try {
+      final response = await http.get(Uri.parse('${apiUrl}getNews?category=news&storyType=$randomStoryType'),headers: {
+
+        'Authorization': token != null ? 'Bearer $token' : '',  // Add token if it's available
+      });
+
+      if (response.statusCode == 200) {
+        Map<String, dynamic> jsonData = json.decode(response.body);
+        return Story.fromJson(jsonData);
+      } else {
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching story: $e');
+      return null;
+    }
+  }
   Future<User?> sendTokenToBackend(String tokenAccess, UserUpdate userUpdate) async {
     try {
       // Retrieve JWT token from secure storage

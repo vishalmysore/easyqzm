@@ -11,6 +11,7 @@ import 'model/question.dart';
 import 'model/question.model.dart';
 import 'model/score.dart';
 import 'model/sharedtext.dart';
+import 'model/story.dart';
 import 'service/api_service.dart';
 import 'package:universal_html/html.dart' hide Text,Navigator,File;
 import 'package:loader_overlay/loader_overlay.dart';
@@ -21,8 +22,9 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 class SearchScreen extends StatefulWidget {
   final String? text;
+  final Story? story;
 
-  const SearchScreen({Key? key, required this.text}) : super(key: key);
+  const SearchScreen({Key? key, required this.text, this.story}) : super(key: key);
 
   @override
   _SearchScreenState createState() => _SearchScreenState();
@@ -35,18 +37,32 @@ class _SearchScreenState extends State<SearchScreen> {
   final storageService = StorageService();
   Future<QuizResponse>? quizResponse;
   String? userId;
-
+  late  String userInput;
   @override
   void initState() {
     super.initState();
     _fetchUserId(); // Fetch user ID asynchronously
+    if (widget.story != null) {
+      _fetchQuizResponse(); // If story exists, fetch quiz response
+    }
+  }
+
+  Future<void> _fetchQuizResponse() async {
+    if (widget.story != null) {
+      userInput = widget.story!.title;
+
+      quizResponse = widget.story?.getQuizResponse() != null
+          ? Future.value(widget.story!.getQuizResponse()!)
+          : null;
+      setState(() {}); // Refresh the UI after assigning quiz response
+    }
   }
   Future<void> _fetchUserId() async {
     userId = await storageService.retrieve(key: 'jwtToken');
     setState(() {}); // Trigger UI update after fetching userId
   }
 
-  late  String userInput;
+
 
   @override
   void dispose() {

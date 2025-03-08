@@ -13,7 +13,7 @@ import 'package:app_links/app_links.dart'; // Import uni_links for deep linking
 import 'dart:async';
 import 'package:flutter/services.dart';
 import '../util/debug.dart' as debug;
-
+import 'package:flutter/foundation.dart' show debugPrint, visibleForTesting;
 import 'app/homescreen.dart';
 import 'home_screen.dart'; // Import the HomeScreen
 import 'model/question.model.dart';
@@ -152,25 +152,13 @@ class _MyAppState extends State<MyApp> {
     String? dataParam = queryParams['data'];
     String? referringUrl = document.referrer;
     String? urlParam = queryParams['url'];
-    if (dataParam != null) {
-      try {
-        // Decode the JSON data if necessary
-        Map<String, dynamic> data = jsonDecode(dataParam);
-        // Update the sharedText with the extracted data
-        setState(() {
-          sharedText = data['articleUrl'];
-        });
-      } catch (e) {
-        debug.d('Error decoding JSON: $e');
-      }
-    }else
+    if(urlParam != null) {
+      updateSharedText(urlParam);
+    } else
     if (referringUrl != null) {
        updateSharedText(referringUrl);
-    } else {
-      if(urlParam != null) {
-        updateSharedText(urlParam);
-      }
     }
+
   }
   void updateSharedText(String text) {
   //  final sharedTextModel = context.read<SharedTextModel>();
