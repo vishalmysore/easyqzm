@@ -49,6 +49,8 @@ dependencies:
   share_plus: ^7.0.2
   pdf: ^3.10.4
   printing: ^5.11.0
+  flutter_speed_dial: ^7.0.0
+  flutter_secure_storage: ^8.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -59,7 +61,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
-  flutter_secure_storage: ^9.2.4
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
