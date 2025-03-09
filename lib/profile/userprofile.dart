@@ -160,10 +160,20 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
 
           // Sign-in button for non-permanent users
-          if (!widget.user.isPermanent)
+
             Padding(
               padding: const EdgeInsets.all(10),
-              child: ElevatedButton.icon(
+              child: widget.user.isPermanent
+                  ? ElevatedButton.icon(
+                onPressed: _signOut, // Function to handle sign-out
+                icon: Icon(Icons.logout),
+                label: Text("Sign Out"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+              )
+                  : ElevatedButton.icon(
                 onPressed: _signInWithGoogle, // Function to handle sign-in
                 icon: Icon(Icons.login),
                 label: Text("Sign in with Google"),
@@ -173,9 +183,34 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                 ),
               ),
             ),
+
         ],
       ),
     );
+  }
+
+  Future<void> _signOut() async {
+    try {
+      await _googleSignIn.signOut(); // Sign out from Google
+      debug.d("User signed out");
+
+      setState(() {
+        widget.user.name = "";
+        widget.user.emailId = null;
+        widget.user.avatar = "";
+        widget.user.setIsPermanent(false);
+        isUserChanged = true;
+        context.read<UserUpdate>().signedOut(widget.user);
+        storageService.clear();
+        Navigator.pop(context);
+      });
+
+      // Optionally, clear stored tokens if you're using local storage
+
+
+    } catch (error) {
+      debug.d("Google Sign-Out Error: $error");
+    }
   }
   Future<void> _signInWithGoogle() async {
     try {
@@ -201,6 +236,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
            widget.user.name = user?.userId ?? "Unknown User";
            widget.user.emailId = user?.emailId;
            widget.user.avatar = user?.avatar ?? "";
+           widget.user.setIsPermanent(true);
            isUserChanged = true;
         });
       }

@@ -31,6 +31,9 @@ class User {
   setEmailId(String emailIdStr) {
     this.emailId = emailIdStr;
   }
+  setIsPermanent(bool perm) {
+    this.isPermanent = perm;
+  }
   // Convert the User object into a map (for sending in the POST request)
   Map<String, dynamic> toJson() {
     return {

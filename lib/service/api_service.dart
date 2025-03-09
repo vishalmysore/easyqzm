@@ -3,6 +3,8 @@
 import 'dart:math';
 
 import 'package:easyqzm/model/userperformance.dart';
+import 'package:easyqzm/service/sse_service.dart';
+import 'package:faker/faker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -10,9 +12,11 @@ import 'dart:convert';
 import 'package:universal_html/html.dart';
 
 import '../model/link.dart';
+import '../model/performanceupdate.dart';
 import '../model/question.dart';
 import '../model/score.dart';
 import '../model/story.dart';
+import '../model/tokennotifier.dart';
 import '../model/user.dart';
 import '../model/userupdate.dart';
 import '../util/debug.dart' as debug;
@@ -25,6 +29,7 @@ class ApiService {
       ? 'https://vishalmysore-easyqserver.hf.space/auth/'  // Production
       : 'http://localhost:7860/auth/';
   String? token;
+  final TokenProvider tokenProvider = TokenProvider();
 
   Future<http.Response?> sendContactUsData(Map<String, dynamic> contactUsData) async {
     await fetchToken();
@@ -180,12 +185,12 @@ class ApiService {
           await storageService.store(key: 'username', value: responseData['userId']);
           final User user = User(
             userId: responseData['userId'],
-            emailId: responseData['emailId'],
+            emailId: responseData['emailid'],
             name: responseData['userId'],
             avatar: responseData['avtaar'],
             expertTopics: ["AI", "Cybersecurity", "Machine Learning"],
             achievements: ["Top Scorer", "AI Guru", "Fastest Learner"],
-            isPermanent: false,
+            isPermanent: true,
             articles: [],
           );
           String: var userStr = jsonEncode(user.toJson());
@@ -206,6 +211,7 @@ class ApiService {
     }
     return null;
   }
+
 
 
   // Fetch the token from localStorage
@@ -232,9 +238,13 @@ class ApiService {
       final data = jsonDecode(response.body);
       return QuizResponse.fromJson(data);
     } else {
-      throw Exception("Error fetching quiz data");
+      throw Exception("Please refresh the page or login again");
     }
   }
+
+
+
+
 
   Future<UserPerformance?> fetchUserPerformance() async {
     await fetchToken();
@@ -256,11 +266,14 @@ class ApiService {
         return null; // Return null in case of an error
       }
     } catch (e) {
-      debug.d('Error fetching user performance: $e');
-      return null; // Handle exceptions
+      handleError();
+      throw Exception("Please refresh the page or login again"); // Handle exceptions
     }
   }
 
+  void handleError() {
+    tokenProvider.setTokenExpired(true);
+  }
 
   Future<void> submitScore(Score score) async {
     await fetchToken();
@@ -278,7 +291,8 @@ class ApiService {
         debug.d('Failed to submit score: ${response.body}');
       }
     } catch (e) {
-      debug.d('Error submitting score: $e');
+      handleError();
+      throw Exception("Please refresh the page or login again");
     }
   }
 
@@ -306,8 +320,8 @@ class ApiService {
         throw Exception('Failed to fetch trending links: ${response.statusCode}');
       }
     } catch (e) {
-      debug.d('Error fetching trending links: $e');
-      throw Exception('Failed to fetch trending links');
+      handleError();
+      throw Exception("Please refresh the page or login again");
     }
   }
 
@@ -335,8 +349,7 @@ class ApiService {
         throw Exception('Failed to fetch trending links: ${response.statusCode}');
       }
     } catch (e) {
-      debug.d('Error fetching trending links: $e');
-      throw Exception('Failed to fetch trending links');
+      throw Exception("Please refresh the page or login again");
     }
   }
 }

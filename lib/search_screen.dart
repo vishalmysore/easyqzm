@@ -70,11 +70,11 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
   Future<void> _fetchData(String difficulty) async {
-    context.loaderOverlay.show();
+
     userInput = _controller.text.trim();
     if (userInput.isEmpty) return;
 
-
+    context.loaderOverlay.show();
     try {
       final response = await apiService.fetchQuestions(userInput, difficulty);
       setState(() {

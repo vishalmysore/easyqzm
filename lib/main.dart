@@ -18,6 +18,7 @@ import 'app/homescreen.dart';
 import 'home_screen.dart'; // Import the HomeScreen
 import 'model/question.model.dart';
 import 'model/sharedtext.dart';
+import 'model/tokennotifier.dart';
 import 'search_screen.dart';
 import 'sharing/sharing.dart';
 import 'package:faker/faker.dart';
@@ -35,6 +36,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => QuestionsModel()),
         ChangeNotifierProvider(create: (_) => UserUpdate()),
         ChangeNotifierProvider(create: (_) => PerformanceUpdate()),
+        ChangeNotifierProvider(create: (_) => TokenProvider()),
       ],
       child: MyApp(),
     ),
@@ -80,6 +82,22 @@ class _MyAppState extends State<MyApp> {
     setNotifier(token!);
   }
 
+
+
+  void setNotifier(String tokenStr) {
+    SSEService _sseService = SSEService(token: tokenStr);
+
+
+    try {
+      _sseService.connect(context.read<PerformanceUpdate>(),tokenStr);
+      debug.d(" Called _sseService.connect()");
+    } catch (error, stackTrace) {
+      debug.d(" Exception in setNotifier: $error");
+      debug.d(stackTrace.toString());
+    }
+
+
+  }
   Future<String?> _setupUser() async{
     var faker = Faker();
 
@@ -97,21 +115,6 @@ class _MyAppState extends State<MyApp> {
     }
     jwtToken = await storageService.retrieve(key:'jwtToken');
     return jwtToken;
-
-  }
-
-  void setNotifier(String tokenStr) {
-    SSEService _sseService = SSEService(token: tokenStr);
-
-
-    try {
-      _sseService.connect(context.read<PerformanceUpdate>(),tokenStr);
-      debug.d(" Called _sseService.connect()");
-    } catch (error, stackTrace) {
-      debug.d(" Exception in setNotifier: $error");
-      debug.d(stackTrace.toString());
-    }
-
 
   }
 
@@ -182,16 +185,25 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-
-    // Check if there's a shared URL, and navigate to ShareUrlScreen if present
     return MaterialApp(
-      navigatorKey: navigatorKey,
       title: 'EasyQz',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home:  MyHomePage(title: 'AI Deep Research Agent for Education'),
-
+      home: Consumer<TokenProvider>(
+        builder: (context, tokenProvider, child) {
+          if (tokenProvider.isTokenExpired) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Token expired, please refresh.'),
+                ),
+              );
+            });
+          }
+          return MyHomePage(title: 'AI Deep Research Agent for Education');
+        },
+      ),
     );
   }
 }

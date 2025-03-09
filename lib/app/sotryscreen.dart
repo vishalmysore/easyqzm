@@ -62,10 +62,11 @@ class _StoryScreenState extends State<StoryScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => SearchScreen(
-          text: null, // Pass whatever data you need
-          story: story,
-        ),
+        builder: (context) =>
+            SearchScreen(
+              text: null, // Pass whatever data you need
+              story: story,
+            ),
       ),
     );
   }
@@ -76,50 +77,49 @@ class _StoryScreenState extends State<StoryScreen> {
       title: Text(story?.title ?? "Loading..."),
       content: isLoading
           ? Center(child: CircularProgressIndicator())
-          : Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SingleChildScrollView(
-            child: Text(story?.storyText ?? "No story available"),
-          ),
-          SizedBox(height: 20),
-          if (!isTimeUp)
-            Text(
-              "Closing in: ${remainingTime ~/ 60}:${(remainingTime % 60)
-                  .toString()
-                  .padLeft(2, '0')}",
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-            ),
-          if (isTimeUp)
-            Stack(
-              children: [
-                // Apply blur effect only if time is up
-                BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-                  // Adjust blur level as needed
-                  child: Container(
-                    color: Colors.black.withOpacity(
-                        0), // Make the container invisible while keeping the blur effect
-                  ),
-                ),
-                // Show blurred text when time is up
+          : SizedBox(
+        width: double.maxFinite, // Ensures the dialog takes full width
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(story?.storyText ?? "No story available"),
+              SizedBox(height: 20),
+              if (!isTimeUp)
                 Text(
-                  "Time is up! Take Test",
+                  "Closing in: ${remainingTime ~/ 60}:${(remainingTime % 60)
+                      .toString()
+                      .padLeft(2, '0')}",
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: Colors.black.withOpacity(
-                        0.5), // Make the text slightly transparent for better visibility
-                  ),
+                      fontWeight: FontWeight.bold, color: Colors.red),
                 ),
-              ],
-            ),
-          // Always display "Take Test" button
-          ElevatedButton(
-            onPressed: navigateToSearchScreen,
-            child: Text("Take Test"),
+              if (isTimeUp)
+                Stack(
+                  children: [
+                    BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                      child: Container(
+                        color: Colors.black.withOpacity(0),
+                      ),
+                    ),
+                    Text(
+                      "Time is up! Take Test",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Colors.black.withOpacity(0.5),
+                      ),
+                    ),
+                  ],
+                ),
+              SizedBox(height: 20), // Add spacing before button
+              ElevatedButton(
+                onPressed: navigateToSearchScreen,
+                child: Text("Take Test"),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       actions: [
         TextButton(

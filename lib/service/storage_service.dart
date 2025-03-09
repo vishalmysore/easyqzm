@@ -24,4 +24,12 @@ class StorageService {
       return null;
     }
   }
+  Future<void> clear() async {
+    try {
+      await storage.deleteAll();
+      debug.d('Cleared all storage successfully');
+    } catch (error) {
+      debug.d('Error clearing storage: $error');
+    }
+  }
 }

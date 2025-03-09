@@ -11,13 +11,19 @@ class UserUpdate with ChangeNotifier {
   late final WebSocketService _wsService;
   late final Stream _scoreStream;
   late final StreamSubscription _scoreSubscription;
-
+  bool _signOut = false;
   int _notificationCount = 0;
 
   User? get user => _user;
   int get notificationCount => _notificationCount;
+  bool get signOut => _signOut;
   void signedUser(User? newUser) async {
     _user = newUser;
+    notifyListeners();
+  }
+  void signedOut(User? newUser) async {
+    _user = newUser;
+    _signOut = true;
     notifyListeners();
   }
   void setUser(User? newUser,String token) {
