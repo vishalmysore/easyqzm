@@ -56,10 +56,22 @@ class WordCloudScreen extends State<WordCloudPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text(widget.title),
-      ),
+        appBar: AppBar(
+          backgroundColor:  Theme.of(context).colorScheme.inversePrimary,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.title,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                "This Feature is being built and will be available to authenticated users only to prevent spam",
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

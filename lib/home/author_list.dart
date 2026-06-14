@@ -79,10 +79,22 @@ class TopAuthorsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[200],
-      appBar: AppBar(
-        title: Text("Top Authors"),
-        backgroundColor: Colors.deepPurple,
-      ),
+        appBar: AppBar(
+          backgroundColor:  Theme.of(context).colorScheme.inversePrimary,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Top Authors",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                "This Feature is being built and will be available to authenticated users only to prevent spam",
+                style: TextStyle(fontSize: 12),
+              ),
+            ],
+          ),
+        ),
       body: ListView.builder(
         padding: EdgeInsets.all(16),
         itemCount: authors.length,

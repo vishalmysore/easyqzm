@@ -236,11 +236,17 @@ class _MyHomePageState extends State<MyHomePage> {
             return BottomNavigationBar(
               items: <BottomNavigationBarItem>[
                 const BottomNavigationBarItem(
-                  icon: Icon(Icons.home),
-                  label: 'Home',
+            icon: KeyedSubtree(
+                key: Key('homeButton'), // Unique key for Home
+                child: Icon(Icons.home),
                 ),
+                label: 'Home',
+             ),
                 const BottomNavigationBarItem(
-                  icon: Icon(Icons.search),
+                  icon: KeyedSubtree(
+                    key: Key('searchButton'), // Unique key for Search
+                    child: Icon(Icons.search),
+                  ),
                   label: 'Search',
                 ),
                 BottomNavigationBarItem(
