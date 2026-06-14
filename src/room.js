@@ -48,11 +48,19 @@ export function roster() {
   const rows = [];
   const add = (name, avatar, isMe) => {
     const s = scores.get(name);
-    rows.push({ name, avatar: avatar || '🎯', isMe, score: s?.score ?? null, total: s?.total ?? null, done: !!s?.done });
+    rows.push({ name, avatar: avatar || '🎯', isMe, status: 'connected', score: s?.score ?? null, total: s?.total ?? null, done: !!s?.done });
   };
   if (me) add(me.name, me.avatar, true);
   for (const p of pm?.getConnected() ?? []) add(p.name, avatars.get(p.name) || p.persona, false);
   return rows;
+}
+
+// How many peers are mid-handshake (offer sent / answer pending, not yet open).
+export function connectingCount() {
+  if (!pm) return 0;
+  let n = 0;
+  for (const p of pm.peers.values()) if (p.state === 'connecting') n++;
+  return n;
 }
 
 // ---- host: create room & grow it -----------------------------------------

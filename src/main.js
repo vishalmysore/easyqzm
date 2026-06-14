@@ -7,6 +7,7 @@ import {
 } from './quiz.js';
 import { buildChallengeLink, readChallengeFromHash, decodeChallenge, clearHash } from './share.js';
 import * as room from './room.js';
+import QRCode from 'qrcode';
 
 const $app = document.getElementById('app');
 const $pill = document.getElementById('model-pill');
@@ -184,7 +185,7 @@ function setupRoomEvents() {
     onRoster: (rows) => { state.roomRoster = rows; if (state.screen === 'roomLobby' || state.screen === 'roomResult') render(); },
     onChallenge: (quiz) => enterRoomChallenge(quiz),
     onSystem: (text) => { state.roomLog = [...state.roomLog, text].slice(-6); if (state.screen === 'roomLobby') render(); },
-    onPeerState: () => {},
+    onPeerState: () => { state.roomRoster = room.roster(); if (['roomLobby', 'roomJoin', 'roomResult'].includes(state.screen)) render(); },
   });
 }
 
@@ -420,16 +421,21 @@ function renderChallengeIntro() {
 // ---- room screens ---------------------------------------------------------
 function rosterRows() {
   const rows = state.roomRoster.length ? state.roomRoster : room.roster();
-  if (!rows.length) return '<div class="empty">No one here yet.</div>';
+  if (!rows.length) return '<tr><td colspan="3" class="empty">No one here yet.</td></tr>';
   const ranked = [...rows].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
   return ranked.map((m, i) => {
     const done = m.done && m.total != null;
-    const status = done ? `${m.score}/${m.total}` : (m.score != null ? '…' : '<span class="tiny muted">waiting</span>');
+    const score = done ? `${m.score}/${m.total}` : (m.score != null ? '…' : '<span class="tiny muted">waiting</span>');
     return `<tr class="${m.isMe ? 'me' : ''}">
       <td class="rank ${i === 0 && done ? 'rank-1' : ''}">${i === 0 && done ? '🥇' : i + 1}</td>
-      <td>${esc(m.avatar)} ${esc(m.name)}${m.isMe ? ' <span class="tiny muted">(you)</span>' : ''}</td>
-      <td>${status}</td></tr>`;
+      <td><span class="dot dot-on" title="connected"></span>${esc(m.avatar)} ${esc(m.name)}${m.isMe ? ' <span class="tiny muted">(you)</span>' : ''}</td>
+      <td>${score}</td></tr>`;
   }).join('');
+}
+
+function connectingNote() {
+  const n = room.connectingCount();
+  return n ? `<div class="tiny muted" style="margin-top:8px"><span class="dot dot-wait"></span>${n} connecting…</div>` : '';
 }
 
 function renderRoomSetup() {
@@ -452,7 +458,7 @@ function renderRoomJoin() {
       <div class="link-box"><input type="text" id="answer-token" value="${esc(state.roomAnswer)}" readonly /><button class="btn btn-sm" id="copy-answer">Copy</button></div>
       <div id="answer-copied" class="tiny" style="margin-top:6px"></div>
       <p class="tiny muted" style="margin-top:14px">Waiting for the host to connect you… this screen will update when the room is live.</p>
-      <div class="card-soft card" style="margin-top:16px;text-align:left"><h3>Room</h3>${`<table class="lb"><tbody>${rosterRows()}</tbody></table>`}</div>
+      <div class="card-soft card" style="margin-top:16px;text-align:left"><h3>Room</h3><table class="lb"><tbody>${rosterRows()}</tbody></table>${connectingNote()}</div>
       <button class="btn btn-ghost btn-block" id="leave-room" style="margin-top:10px">Leave</button>
     </div>`;
   }
@@ -475,6 +481,7 @@ function renderRoomLobby() {
       <h3>Invite people</h3>
       ${state.roomLink ? `<div class="link-box"><input type="text" id="invite-link" value="${esc(state.roomLink)}" readonly /><button class="btn btn-sm" id="copy-invite">Copy</button></div>
         <div id="invite-copied" class="tiny" style="margin-top:6px"></div>
+        <div class="qr-wrap"><canvas id="qr-code" class="qr"></canvas><span class="tiny muted">Scan to join from a phone</span></div>
         <label>Paste their join code</label>
         <div class="link-box"><input type="text" id="answer-input" placeholder="join code from your friend" /><button class="btn btn-sm" id="connect-answer">Connect</button></div>
         ${state.roomError ? `<div class="banner banner-warn" style="margin-top:8px">${esc(state.roomError)}</div>` : ''}`
@@ -502,6 +509,7 @@ function renderRoomLobby() {
     </div>
     <p class="sub" style="margin-top:6px">${room.amHost() ? 'You are the host.' : 'Connected to the room.'} Everyone who joins plays the same quizzes live.</p>
     <table class="lb"><thead><tr><th>#</th><th>Player</th><th>Score</th></tr></thead><tbody>${rosterRows()}</tbody></table>
+    ${connectingNote()}
     ${log ? `<div style="margin-top:10px">${log}</div>` : ''}
   </div>
   ${hostControls}
@@ -619,6 +627,12 @@ function wire() {
   if (cAns) cAns.onclick = () => hostAcceptAnswer((document.getElementById('answer-input').value || '').trim());
   copyField('copy-invite', 'invite-link', () => state.roomLink, 'invite-copied', 'EasyQZ live room', 'Join my live quiz room!');
   copyField('copy-answer', 'answer-token', () => state.roomAnswer, 'answer-copied');
+  const qr = document.getElementById('qr-code');
+  if (qr && state.roomLink) {
+    QRCode.toCanvas(qr, state.roomLink, { width: 176, margin: 1, errorCorrectionLevel: 'L' }, (err) => {
+      if (err) qr.closest('.qr-wrap')?.classList.add('hidden'); // link too long for a scannable QR
+    });
+  }
 
   // profile
   const sp = document.getElementById('save-profile');
