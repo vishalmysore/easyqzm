@@ -1,32 +1,7 @@
 // Async, serverless challenges. The entire challenge — questions, answers, and
 // the challenger's score — is packed into the invite link's URL hash. The
 // recipient opens it anytime, takes the same quiz locally, and compares.
-//
-// Compression + URL-safe base64 is reused from AgentHerd's encodeSDP/decodeSDP
-// (it packed WebRTC SDP the same way; here we pack a challenge payload instead).
-
-async function pack(obj) {
-  const json = JSON.stringify(obj);
-  const cs = new CompressionStream('deflate-raw');
-  const w = cs.writable.getWriter();
-  w.write(new TextEncoder().encode(json));
-  w.close();
-  const buf = await new Response(cs.readable).arrayBuffer();
-  return btoa(String.fromCharCode(...new Uint8Array(buf)))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function unpack(token) {
-  const b64 = token.trim().replace(/-/g, '+').replace(/_/g, '/');
-  const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
-  const bytes = Uint8Array.from(atob(padded), (c) => c.charCodeAt(0));
-  const ds = new DecompressionStream('deflate-raw');
-  const w = ds.writable.getWriter();
-  w.write(bytes);
-  w.close();
-  const buf = await new Response(ds.readable).arrayBuffer();
-  return JSON.parse(new TextDecoder().decode(buf));
-}
+import { pack, unpack } from './codec.js';
 
 // Strip per-attempt fields so the link carries only the quiz + challenger score.
 function slimQuestions(questions) {

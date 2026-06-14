@@ -6,6 +6,7 @@ import {
   buildOfflineQuiz, scoreQuiz, saveQuiz, saveAttempt, allAttempts, leaderboard,
 } from './quiz.js';
 import { buildChallengeLink, readChallengeFromHash, decodeChallenge, clearHash } from './share.js';
+import * as room from './room.js';
 
 const $app = document.getElementById('app');
 const $pill = document.getElementById('model-pill');
@@ -31,6 +32,15 @@ const state = {
   busyText: '',
   busyStatus: '',
   webgpu: true,
+  // live multiplayer room
+  roomActive: false,      // we are in (or joining) a room
+  roomPlaying: false,     // currently taking a room challenge
+  roomRoster: [],         // [{name, avatar, isMe, score, total, done}]
+  roomLog: [],            // recent join/leave system lines
+  roomLink: '',           // host: current invite link
+  roomAnswer: '',         // joiner: answer token to send back
+  roomJoinToken: null,    // joiner: pending offer token from the link
+  roomError: '',
 };
 
 // ---- helpers --------------------------------------------------------------
@@ -109,7 +119,7 @@ async function handleGenerate() {
       go('busy');
       const quiz = buildOfflineQuiz({ count: state.count, difficulty: state.difficulty === 'mixed' ? null : state.difficulty });
       await saveQuiz(quiz);
-      startQuiz(quiz, null);
+      finishGenerate(quiz);
       return;
     }
 
@@ -136,7 +146,7 @@ async function handleGenerate() {
       quiz = await createQuizFromTopic({ topic, count: state.count, difficulty: state.difficulty, onStream: onQuizStream });
     }
     await saveQuiz(quiz);
-    startQuiz(quiz, null);
+    finishGenerate(quiz);
   } catch (err) {
     console.error(err);
     state.busyText = '';
@@ -158,7 +168,71 @@ async function submitQuiz() {
   const result = scoreQuiz(state.quiz, state.answers);
   state.result = result;
   await saveAttempt({ quiz: state.quiz, result, me: state.me, challenger: state.challenger });
+  if (state.roomPlaying) {
+    state.roomPlaying = false;
+    room.reportScore(result.score, result.total);
+    state.roomRoster = room.roster();
+    go('roomResult');
+    return;
+  }
   go('result');
+}
+
+// ---- live multiplayer room -----------------------------------------------
+function setupRoomEvents() {
+  room.onRoom({
+    onRoster: (rows) => { state.roomRoster = rows; if (state.screen === 'roomLobby' || state.screen === 'roomResult') render(); },
+    onChallenge: (quiz) => enterRoomChallenge(quiz),
+    onSystem: (text) => { state.roomLog = [...state.roomLog, text].slice(-6); if (state.screen === 'roomLobby') render(); },
+    onPeerState: () => {},
+  });
+}
+
+function finishGenerate(quiz) {
+  if (state.genTarget === 'room') { state.genTarget = 'self'; room.startChallenge(quiz); }
+  else startQuiz(quiz, null);
+}
+
+function enterRoomChallenge(quiz) {
+  if (!quiz) return;
+  state.roomActive = true;
+  state.roomPlaying = true;
+  startQuiz(quiz, null);
+}
+
+async function hostCreateRoom() {
+  try {
+    state.roomActive = true;
+    state.roomError = '';
+    state.roomLink = await room.createRoom({ name: state.me.name, avatar: state.me.avatar });
+    state.roomRoster = room.roster();
+    go('roomLobby');
+  } catch (e) { console.error(e); alert('Could not create room: ' + (e?.message || e)); }
+}
+
+async function hostAcceptAnswer(token) {
+  try { await room.acceptAnswer(token); state.roomLink = ''; render(); }
+  catch (e) { state.roomError = 'Invalid join code. Ask them to copy it again.'; render(); }
+}
+
+async function hostInviteAnother() {
+  try { state.roomLink = await room.nextInviteLink(); render(); }
+  catch (e) { alert('Could not create invite: ' + (e?.message || e)); }
+}
+
+async function joinerGenerateAnswer() {
+  try {
+    state.roomActive = true;
+    state.roomAnswer = await room.joinRoom({ name: state.me.name, avatar: state.me.avatar }, state.roomJoinToken);
+    state.roomRoster = room.roster();
+    render();
+  } catch (e) { console.error(e); state.roomError = 'This invite link looks invalid or expired.'; render(); }
+}
+
+function leaveRoom() {
+  room.leave();
+  Object.assign(state, { roomActive: false, roomPlaying: false, roomRoster: [], roomLog: [], roomLink: '', roomAnswer: '', roomJoinToken: null, roomError: '' });
+  go('home');
 }
 
 // ---- screens --------------------------------------------------------------
@@ -169,6 +243,8 @@ function render() {
   const r = {
     home: renderHome, busy: renderBusy, quiz: renderQuiz,
     result: renderResult, profile: renderProfile, challengeIntro: renderChallengeIntro,
+    roomSetup: renderRoomSetup, roomJoin: renderRoomJoin, roomLobby: renderRoomLobby,
+    roomResult: renderRoomResult,
   }[state.screen] || renderHome;
   $app.innerHTML = r();
   wire();
@@ -225,11 +301,13 @@ function renderHome() {
 
     <div class="spacer"></div>
     <button class="btn btn-block" id="generate-btn">${aiMode ? '✨ Generate quiz' : '⚡ Start quick quiz'}</button>
+    <button class="btn btn-ghost btn-block" id="play-live-btn" style="margin-top:10px">👥 Play live with friends</button>
   </div>
 
   <div class="card card-soft">
-    <h3>How challenges work</h3>
-    <p class="tiny muted" style="margin:0">Finish a quiz → tap <strong>Challenge a friend</strong>. The whole quiz and your score get packed into a link. Your friend opens it, takes the same quiz on their device, and sees who won. Everything is stored locally in your browser.</p>
+    <h3>Two ways to challenge friends</h3>
+    <p class="tiny muted" style="margin:0 0 8px"><strong>By link (async):</strong> finish a quiz → <strong>Challenge a friend</strong>. The quiz + your score pack into a link; they take it anytime and see who won.</p>
+    <p class="tiny muted" style="margin:0"><strong>Live room (real-time):</strong> <strong>Play live with friends</strong> → invite people into a peer-to-peer room and race the same quiz together. Still no server.</p>
   </div>`;
 }
 
@@ -339,6 +417,114 @@ function renderChallengeIntro() {
   </div>`;
 }
 
+// ---- room screens ---------------------------------------------------------
+function rosterRows() {
+  const rows = state.roomRoster.length ? state.roomRoster : room.roster();
+  if (!rows.length) return '<div class="empty">No one here yet.</div>';
+  const ranked = [...rows].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  return ranked.map((m, i) => {
+    const done = m.done && m.total != null;
+    const status = done ? `${m.score}/${m.total}` : (m.score != null ? '…' : '<span class="tiny muted">waiting</span>');
+    return `<tr class="${m.isMe ? 'me' : ''}">
+      <td class="rank ${i === 0 && done ? 'rank-1' : ''}">${i === 0 && done ? '🥇' : i + 1}</td>
+      <td>${esc(m.avatar)} ${esc(m.name)}${m.isMe ? ' <span class="tiny muted">(you)</span>' : ''}</td>
+      <td>${status}</td></tr>`;
+  }).join('');
+}
+
+function renderRoomSetup() {
+  return `<div class="card">
+    <h1>Play live with friends 👥</h1>
+    <p class="sub">Create a room and invite people with a link. Everyone connects directly, peer-to-peer — still no server.</p>
+    <button class="btn btn-block" id="create-room">Create a room →</button>
+    <button class="btn btn-ghost btn-block" data-go="home" style="margin-top:10px">← Back</button>
+    <p class="tiny muted" style="margin-top:14px">To join a room instead, just open the invite link your friend sends you.</p>
+  </div>`;
+}
+
+function renderRoomJoin() {
+  const c = state.incomingChallenge; // not used; join uses token
+  if (state.roomAnswer) {
+    return `<div class="card center">
+      <div style="font-size:40px">🤝</div>
+      <h1>Almost in!</h1>
+      <p class="sub">Send this <strong>join code</strong> back to the host. Once they paste it, you're connected.</p>
+      <div class="link-box"><input type="text" id="answer-token" value="${esc(state.roomAnswer)}" readonly /><button class="btn btn-sm" id="copy-answer">Copy</button></div>
+      <div id="answer-copied" class="tiny" style="margin-top:6px"></div>
+      <p class="tiny muted" style="margin-top:14px">Waiting for the host to connect you… this screen will update when the room is live.</p>
+      <div class="card-soft card" style="margin-top:16px;text-align:left"><h3>Room</h3>${`<table class="lb"><tbody>${rosterRows()}</tbody></table>`}</div>
+      <button class="btn btn-ghost btn-block" id="leave-room" style="margin-top:10px">Leave</button>
+    </div>`;
+  }
+  return `<div class="card center">
+    <div style="font-size:40px">🎉</div>
+    <h1>You're invited to a live room</h1>
+    <p class="sub">Joining as <strong>${esc(state.me.avatar)} ${esc(state.me.name)}</strong></p>
+    ${state.roomError ? `<div class="banner banner-warn">${esc(state.roomError)}</div>` : ''}
+    <button class="btn btn-block" id="join-room">Generate my join code →</button>
+    <button class="btn btn-ghost btn-block" data-go="home" style="margin-top:10px">Skip</button>
+  </div>`;
+}
+
+function renderRoomLobby() {
+  const connected = (state.roomRoster.length ? state.roomRoster : room.roster()).length;
+  const aiMode = state.mode !== 'offline';
+  const log = state.roomLog.slice(-4).map((l) => `<div class="tiny muted">• ${esc(l)}</div>`).join('');
+  const hostControls = room.amHost() ? `
+    <div class="card card-soft">
+      <h3>Invite people</h3>
+      ${state.roomLink ? `<div class="link-box"><input type="text" id="invite-link" value="${esc(state.roomLink)}" readonly /><button class="btn btn-sm" id="copy-invite">Copy</button></div>
+        <div id="invite-copied" class="tiny" style="margin-top:6px"></div>
+        <label>Paste their join code</label>
+        <div class="link-box"><input type="text" id="answer-input" placeholder="join code from your friend" /><button class="btn btn-sm" id="connect-answer">Connect</button></div>
+        ${state.roomError ? `<div class="banner banner-warn" style="margin-top:8px">${esc(state.roomError)}</div>` : ''}`
+        : `<button class="btn btn-sm" id="invite-another">+ Invite another player</button>`}
+    </div>
+    <div class="card">
+      <h3>Start a challenge for the room</h3>
+      <div class="chips">${['topic', 'category', 'offline'].map((m) => `<button class="chip" data-rmode="${m}" aria-pressed="${state.mode === m}">${m === 'topic' ? '✍️ Topic' : m === 'category' ? '🎲 Category' : '⚡ Quick'}</button>`).join('')}</div>
+      ${state.mode === 'topic' ? `<label>Topic</label><input type="text" id="topic-input" placeholder="e.g. space, history, JavaScript" value="${esc(state.topicInput)}" />` : ''}
+      ${state.mode === 'category' ? `<label>Category</label><div class="chips">${CATEGORIES.map((c) => `<button class="chip" data-chip="category" data-value="${c.id}" aria-pressed="${state.category === c.id}">${c.emoji} ${c.label}</button>`).join('')}</div>` : ''}
+      <div class="row" style="margin-top:8px">
+        <div><label>Questions</label><div class="chips">${[3, 5, 10].map((n) => `<button class="chip" data-chip="count" data-value="${n}" aria-pressed="${state.count === n}">${n}</button>`).join('')}</div></div>
+        <div><label>Difficulty</label><div class="chips">${['easy', 'medium', 'hard'].map((d) => `<button class="chip" data-chip="difficulty" data-value="${d}" aria-pressed="${state.difficulty === d}">${d[0].toUpperCase() + d.slice(1)}</button>`).join('')}</div></div>
+      </div>
+      ${aiMode && !state.webgpu ? '<div class="banner banner-warn" style="margin-top:8px">⚠️ No WebGPU — use Quick for the room.</div>' : ''}
+      <div class="spacer"></div>
+      <button class="btn btn-block" id="start-challenge">🚀 Start challenge for everyone</button>
+    </div>` : `<div class="card card-soft"><p class="muted" style="margin:0">Waiting for the host to start a challenge…</p></div>`;
+
+  return `
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h1 style="margin:0">Room lobby</h1>
+      <span class="pill pill-ready">${connected} connected</span>
+    </div>
+    <p class="sub" style="margin-top:6px">${room.amHost() ? 'You are the host.' : 'Connected to the room.'} Everyone who joins plays the same quizzes live.</p>
+    <table class="lb"><thead><tr><th>#</th><th>Player</th><th>Score</th></tr></thead><tbody>${rosterRows()}</tbody></table>
+    ${log ? `<div style="margin-top:10px">${log}</div>` : ''}
+  </div>
+  ${hostControls}
+  <button class="btn btn-ghost btn-block" id="leave-room">Leave room</button>`;
+}
+
+function renderRoomResult() {
+  const r = state.result;
+  return `
+  <div class="card">
+    <div class="score-hero">
+      <div class="score-big">${r.score}/${r.total}</div>
+      <div class="score-sub">${r.percentage}% · ${esc(state.quiz.title)}</div>
+    </div>
+    <h2>Live room scores</h2>
+    <p class="tiny muted">Updates as each player finishes.</p>
+    <table class="lb"><thead><tr><th>#</th><th>Player</th><th>Score</th></tr></thead><tbody>${rosterRows()}</tbody></table>
+    <div class="spacer"></div>
+    <button class="btn btn-block" id="back-to-lobby">← Back to lobby</button>
+    <button class="btn btn-ghost btn-block" id="leave-room" style="margin-top:10px">Leave room</button>
+  </div>`;
+}
+
 async function renderProfileData() {
   const board = await leaderboard();
   const history = (await allAttempts()).slice(0, 15);
@@ -420,6 +606,20 @@ function wire() {
   const cb = document.getElementById('challenge-btn'); if (cb) cb.onclick = onChallengeClick;
   const ac = document.getElementById('accept-challenge'); if (ac) ac.onclick = acceptChallenge;
 
+  // room
+  const pl = document.getElementById('play-live-btn'); if (pl) pl.onclick = () => go('roomSetup');
+  const cr = document.getElementById('create-room'); if (cr) cr.onclick = hostCreateRoom;
+  const jr = document.getElementById('join-room'); if (jr) jr.onclick = joinerGenerateAnswer;
+  const ia = document.getElementById('invite-another'); if (ia) ia.onclick = hostInviteAnother;
+  const sc = document.getElementById('start-challenge'); if (sc) sc.onclick = () => { state.genTarget = 'room'; handleGenerate(); };
+  const bl = document.getElementById('back-to-lobby'); if (bl) bl.onclick = () => go('roomLobby');
+  $app.querySelectorAll('[id=leave-room]').forEach((b) => b.onclick = leaveRoom);
+  $app.querySelectorAll('[data-rmode]').forEach((b) => b.onclick = () => { state.mode = b.dataset.rmode; render(); });
+  const cAns = document.getElementById('connect-answer');
+  if (cAns) cAns.onclick = () => hostAcceptAnswer((document.getElementById('answer-input').value || '').trim());
+  copyField('copy-invite', 'invite-link', () => state.roomLink, 'invite-copied', 'EasyQZ live room', 'Join my live quiz room!');
+  copyField('copy-answer', 'answer-token', () => state.roomAnswer, 'answer-copied');
+
   // profile
   const sp = document.getElementById('save-profile');
   if (sp) sp.onclick = async () => {
@@ -463,6 +663,22 @@ async function acceptChallenge() {
   startQuiz(quiz, c.challenger);
 }
 
+// Generic copy/share wiring for a read-only token/link field.
+function copyField(btnId, inputId, getValue, okId, shareTitle, shareText) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const inp = document.getElementById(inputId);
+  if (inp) inp.onclick = (e) => e.target.select();
+  const flash = () => { const ok = document.getElementById(okId); if (ok) ok.textContent = 'Copied ✓'; };
+  btn.onclick = async () => {
+    const val = getValue();
+    try {
+      if (shareTitle && navigator.share) await navigator.share({ title: shareTitle, text: shareText, url: val });
+      else { await navigator.clipboard.writeText(val); flash(); }
+    } catch { try { await navigator.clipboard.writeText(val); flash(); } catch {} }
+  };
+}
+
 // ---- boot -----------------------------------------------------------------
 async function boot() {
   state.me = await getMe();
@@ -472,6 +688,17 @@ async function boot() {
   document.getElementById('brand-home').onclick = () => { state.challenger = null; go('home'); };
   document.getElementById('brand-home').onkeydown = (e) => { if (e.key === 'Enter') go('home'); };
   document.getElementById('profile-btn').onclick = () => go('profile');
+
+  setupRoomEvents();
+
+  // A live-room invite link?
+  const roomToken = room.readRoomFromHash();
+  if (roomToken) {
+    state.roomJoinToken = roomToken;
+    clearHash();
+    go('roomJoin');
+    return;
+  }
 
   const token = readChallengeFromHash();
   if (token) {
