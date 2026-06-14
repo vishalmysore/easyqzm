@@ -33,13 +33,13 @@ function shuffle(arr) {
 }
 
 // --- AI mode ---------------------------------------------------------------
-export async function createQuizFromTopic({ topic, count, difficulty }) {
-  const questions = await generateQuiz({ topic, count, difficulty });
+export async function createQuizFromTopic({ topic, count, difficulty, onStream }) {
+  const questions = await generateQuiz({ topic, count, difficulty, onStream });
   return makeQuiz({ topic, title: topic, difficulty, questions, source: 'ai-topic' });
 }
 
-export async function createQuizFromText({ text, title, count, difficulty }) {
-  const questions = await generateQuiz({ sourceText: text, topic: title || 'your text', count, difficulty });
+export async function createQuizFromText({ text, title, count, difficulty, onStream }) {
+  const questions = await generateQuiz({ sourceText: text, topic: title || 'your text', count, difficulty, onStream });
   return makeQuiz({ topic: title || 'Pasted text', title: title || 'Pasted text', difficulty, questions, source: 'ai-text' });
 }
 

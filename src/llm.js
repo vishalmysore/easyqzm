@@ -72,8 +72,9 @@ Respond with ONLY valid JSON, no prose, in exactly this shape:
 {"questions":[{"question":"What is 2+2?","choices":["3","4","5","6"],"answerIndex":1,"explanation":"2+2 equals 4."}]}`;
 }
 
-// Generates a quiz with the local model. Retries once if JSON is malformed.
-export async function generateQuiz({ topic, sourceText, count = 5, difficulty = 'medium' }) {
+// Generates a quiz with the local model, streaming tokens as they arrive.
+// onStream(fullTextSoFar) fires on every chunk. Retries once if JSON is bad.
+export async function generateQuiz({ topic, sourceText, count = 5, difficulty = 'medium', onStream } = {}) {
   if (!engine) throw new Error('Model not loaded');
   const messages = [
     { role: 'system', content: 'You are a precise quiz generator. You output only valid JSON.' },
@@ -81,15 +82,20 @@ export async function generateQuiz({ topic, sourceText, count = 5, difficulty = 
   ];
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await engine.chat.completions.create({
+    let full = '';
+    const stream = await engine.chat.completions.create({
       messages,
       temperature: attempt === 0 ? 0.7 : 0.4,
       max_tokens: 2048,
+      stream: true,
     });
-    const text = res.choices?.[0]?.message?.content || '';
-    const questions = normalizeQuestions(extractJSON(text), count);
+    for await (const chunk of stream) {
+      const delta = chunk.choices?.[0]?.delta?.content || '';
+      if (delta) { full += delta; onStream?.(full); }
+    }
+    const questions = normalizeQuestions(extractJSON(full), count);
     if (questions) return questions;
-    messages.push({ role: 'assistant', content: text });
+    messages.push({ role: 'assistant', content: full });
     messages.push({ role: 'user', content: 'That was not valid JSON. Respond again with ONLY the JSON object described.' });
   }
   throw new Error('The model did not return a usable quiz. Try again or pick a larger model.');

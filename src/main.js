@@ -74,7 +74,25 @@ function setBusyGenerating() {
   setBusyTitle('Writing your quiz…');
   const bar = document.getElementById('busy-bar');
   if (bar) { bar.style.width = ''; bar.classList.add('indet'); }
-  setBusyStatus('Generating questions on your device… (a 1B model takes ~20–40s)');
+  setBusyStatus('Generating on your device — questions appear as they’re written…');
+  document.getElementById('stream-area')?.classList.remove('hidden');
+}
+
+// Live preview: pull completed question texts out of the partial JSON stream so
+// the user watches questions pop in as the model writes them.
+function onQuizStream(full) {
+  const matches = [...full.matchAll(/"question"\s*:\s*"((?:[^"\\]|\\.)*)"/g)]
+    .map((m) => m[1].replace(/\\"/g, '"').replace(/\\n/g, ' ').replace(/\\\\/g, '\\'));
+  const countEl = document.getElementById('stream-count');
+  const listEl = document.getElementById('stream-list');
+  if (countEl) countEl.textContent = matches.length
+    ? `Drafted ${matches.length} question${matches.length > 1 ? 's' : ''}…`
+    : 'Thinking…';
+  if (listEl) {
+    listEl.innerHTML = matches.map((q, i) =>
+      `<div class="stream-q"><span class="stream-n">${i + 1}</span><span>${esc(q)}</span></div>`).join('');
+    listEl.scrollTop = listEl.scrollHeight;
+  }
 }
 
 async function ensureModel() {
@@ -113,9 +131,9 @@ async function handleGenerate() {
 
     let quiz;
     if (state.mode === 'text') {
-      quiz = await createQuizFromText({ text: state.textInput, title: state.titleInput.trim(), count: state.count, difficulty: state.difficulty });
+      quiz = await createQuizFromText({ text: state.textInput, title: state.titleInput.trim(), count: state.count, difficulty: state.difficulty, onStream: onQuizStream });
     } else {
-      quiz = await createQuizFromTopic({ topic, count: state.count, difficulty: state.difficulty });
+      quiz = await createQuizFromTopic({ topic, count: state.count, difficulty: state.difficulty, onStream: onQuizStream });
     }
     await saveQuiz(quiz);
     startQuiz(quiz, null);
@@ -221,6 +239,10 @@ function renderBusy() {
     <h2 style="margin-top:14px" id="busy-title">${esc(state.busyText || 'Working…')}</h2>
     <div class="progress-wrap"><div class="progress-track"><div class="progress-bar" id="busy-bar"></div></div></div>
     <p class="muted" id="busy-status">${esc(state.busyStatus || 'Starting…')}</p>
+    <div id="stream-area" class="stream-area hidden">
+      <p class="tiny muted" id="stream-count">Thinking…</p>
+      <div id="stream-list" class="stream-list"></div>
+    </div>
     <p class="tiny muted">The model downloads once per browser and is cached — it won't re-download. Generating each quiz still runs the model on your device, which takes a few seconds.</p>
   </div>`;
 }
