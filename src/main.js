@@ -59,7 +59,22 @@ function setBusyStatus(text) {
   if (el) el.textContent = text;
   const bar = document.getElementById('busy-bar');
   const m = text.match(/(\d+)%/);
-  if (bar && m) bar.style.width = m[1] + '%';
+  if (bar && m) { bar.classList.remove('indet'); bar.style.width = m[1] + '%'; }
+}
+
+function setBusyTitle(text) {
+  state.busyText = text;
+  const el = document.getElementById('busy-title');
+  if (el) el.textContent = text;
+}
+
+// Generation reports no incremental progress, so show an indeterminate bar
+// instead of a frozen 0% one (which looks like a stuck reload).
+function setBusyGenerating() {
+  setBusyTitle('Writing your quiz…');
+  const bar = document.getElementById('busy-bar');
+  if (bar) { bar.style.width = ''; bar.classList.add('indet'); }
+  setBusyStatus('Generating questions on your device… (a 1B model takes ~20–40s)');
 }
 
 async function ensureModel() {
@@ -87,10 +102,14 @@ async function handleGenerate() {
     if (state.mode === 'topic' && !topic) { alert('Enter a topic first.'); return; }
     if (state.mode === 'text' && !state.textInput.trim()) { alert('Paste some text first.'); return; }
 
-    state.busyText = 'Loading the AI model & writing your quiz…';
+    // Only show "loading model" when it actually needs loading. Once the model
+    // is in memory it stays loaded for the whole session — no reload per quiz.
+    const needLoad = !(isReady() && currentModelId() === state.modelId);
+    state.busyText = needLoad ? 'Loading the AI model (one time per browser)…' : 'Writing your quiz…';
+    state.busyStatus = needLoad ? 'Preparing the model…' : 'Starting…';
     go('busy');
     await ensureModel();
-    setBusyStatus('Generating questions… (this runs on your device)');
+    setBusyGenerating();
 
     let quiz;
     if (state.mode === 'text') {
@@ -199,10 +218,10 @@ function renderHome() {
 function renderBusy() {
   return `<div class="card center" style="padding:48px 20px">
     <div class="spin"></div>
-    <h2 style="margin-top:14px">${esc(state.busyText || 'Working…')}</h2>
+    <h2 style="margin-top:14px" id="busy-title">${esc(state.busyText || 'Working…')}</h2>
     <div class="progress-wrap"><div class="progress-track"><div class="progress-bar" id="busy-bar"></div></div></div>
     <p class="muted" id="busy-status">${esc(state.busyStatus || 'Starting…')}</p>
-    <p class="tiny muted">First model load downloads weights (~1&nbsp;GB) and caches them — later quizzes are instant.</p>
+    <p class="tiny muted">The model downloads once per browser and is cached — it won't re-download. Generating each quiz still runs the model on your device, which takes a few seconds.</p>
   </div>`;
 }
 
