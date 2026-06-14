@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="EasyQZ — generate AI quizzes in your browser, no server. Challenge friends with a link." />
+  <title>EasyQZ — AI quizzes, in your browser</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand" id="brand-home" role="button" tabindex="0" title="Home">
+      <span class="brand-mark">🧠</span>
+      <span class="brand-name">EasyQZ</span>
+      <span class="brand-tag">no server · runs in your browser</span>
+    </div>
+    <div class="header-right">
+      <span id="model-pill" class="pill pill-idle" title="Local AI model status">model: not loaded</span>
+      <button id="profile-btn" class="icon-btn" title="Your profile &amp; history">
+        <span id="profile-avatar">🙂</span>
+        <span id="profile-name">guest</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="app" class="app-main"><!-- screens render here --></main>
+
+  <footer class="app-footer">
+    <span>EasyQZ · client-only · <a href="https://github.com/vishalmysore/easyqzm" target="_blank" rel="noreferrer">source</a></span>
+    <span id="webgpu-note"></span>
+  </footer>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

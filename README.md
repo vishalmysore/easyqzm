@@ -1,63 +1,68 @@
-# EasyQZ 🧠📖
+# EasyQZ 🧠 — client-only AI quizzes (AgentHerd architecture)
 
-**EasyQZ** is an AI Research Agent for knowledge enhancement via intelligent Quiz Generation and feedback  that allows users to generate quizzes from any article, link, topic, or custom text. Whether you're a student, educator, or professional, EasyQ helps you test your knowledge, compete with others, and discover trending topics.
+EasyQZ generates quizzes with an LLM that runs **entirely in your browser** and lets
+you **challenge friends with a link** — no server, no accounts, no API keys.
 
-## Live Demo
-- **URL**: [EasyQZ](https://easyqz.online/)
+This is a complete rewrite of the original Flutter + server app into the
+[AgentHerd](https://github.com/vishalmysore/agentHerd) pattern: **WebLLM + WebGPU**
+for inference, **IndexedDB** for storage, and **self-contained invite links** for
+social play. The previous Flutter/server version is preserved in git at tag
+[`flutter-legacy`](https://github.com/vishalmysore/easyqzm/releases/tag/flutter-legacy).
 
-## For Authors
+## How it works
 
-To enable EasyQZ for your article, all you need to do is add the following link inside your article. You don't need to do anything else:
-
-```html
-<a href="https://easyqz.online/" target="_blank">
-  Test with EasyQZ
-</a>
+```
+Your browser tab = the whole app
+┌───────────────────────────────────────────────┐
+│  WebLLM (WebGPU)  → generates the quiz          │
+│  IndexedDB        → identity, history, scores   │
+│  URL-hash link    → async challenge a friend    │
+└───────────────────────────────────────────────┘
+       No HTTP / SSE / WebSocket. No backend.
 ```
 
-## ** For Users : EasyQz Bookmarklet 📖🚀**
+- **AI quiz generation** — pick a topic, paste an article, or choose a category. A
+  local model (Llama / Qwen / Gemma / Phi) writes the questions on your device.
+- **Quick Quiz (offline)** — needs no model at all; builds MCQs from a bundled bank
+  of 500 questions. Works even without WebGPU.
+- **Challenge a friend** — your finished quiz + score are compressed into a link
+  (`#challenge=…`). Your friend opens it, takes the *same* quiz locally, and sees who
+  won. Nobody needs to be online at the same time.
+- **Local leaderboard & history** — every score that passes through your browser
+  (yours and incoming challenges) is ranked locally.
 
-Easily generate quizzes from any article with **EasyQz**! This bookmarklet allows you to create a quiz with just **one click** while reading an article.
+## What "no server" changes
+- **No global leaderboard / trending.** Without a shared backend there is no global
+  store; leaderboards are local + among the people whose links you play.
+- **Quizzing a URL** can't fetch arbitrary pages (browser CORS) — paste the article
+  text instead. The text is captured into the quiz so the challenge link is self-contained.
 
-### **📌 How to Install the Bookmarklet**
+## Run locally
+```bash
+npm install
+npm run dev      # http://localhost:3000
+```
+**Requirements:** a WebGPU browser (Chrome/Edge 113+) for AI modes; a GPU helps.
+First model load downloads weights (~1 GB) and caches them — later quizzes are instant.
+Quick Quiz works everywhere.
 
+## Build & deploy
+```bash
+npm run build    # → dist/  (static files)
+```
+Pushing to `main` deploys to GitHub Pages via `.github/workflows/deploy.yml`.
 
-#### **Manual Bookmark Addition**
-If dragging doesn’t work, follow these steps:
+## Project layout
+```
+index.html · style.css · challenge-bank.js   (bundled 500-question bank)
+src/
+  main.js       app bootstrap, routing, screens
+  llm.js        WebLLM wrapper + quiz prompts
+  quiz.js       generation, offline mode, scoring, persistence
+  db.js         IndexedDB stores: profile, attempts, quizzes, challenges
+  identity.js   local self-asserted identity
+  share.js      encode/decode challenge ⇄ URL hash
+```
 
-1. Open your **Bookmarks Manager** (`Ctrl+Shift+O` on Chrome).
-2. Click **"Add Bookmark"** or **"New Bookmark"**.
-3. **Name** it: `EasyQz Quiz`
-4. **Paste the following code** into the URL field:
-
-   ```javascript
-   javascript:(function(){var articleUrl=encodeURIComponent(window.location.href);window.open('https://easyqz.online?url='+articleUrl,'_blank');})();
-
-### Architecture
-![Architecture](servercolor.png)
-
-### 🌟 Core Features:
-- **Automatic Quiz Generation** – Instantly creates quizzes from any article, text, or topic.
-- **AI-Powered Questioning** – Generates high-quality, meaningful questions based on the content.
-- **Topic-Based Questions** – Simply enter a topic (e.g., *Java, Global Summit, Boating Requirements in Canada*), and EasyQ will generate relevant questions.
-- **Trending Topics** – Discover the *top most asked topics* from the past week.
-
-### 🚀 Advanced Features:
-- **Customizable Tests** – Select the *number of questions, difficulty level, or enable rapid-fire mode*.
-- **Performance Benchmarking** – See the *average score* for a particular quiz to compare results.
-- **Compete with Others** – Pick an opponent and challenge them to a quiz.
-- **Social Sharing** – Share your quiz results on LinkedIn and other platforms.
-- **Leaderboard & Rankings** – View the *Top 10 results* for a specific quiz.
-- **Expert Assistance** – If you don’t understand a question, ask an expert for clarification.
-- **User Engagement Insights** – Track *how many users have taken a quiz* for an article.
-- **Section-Wise Performance** – Identify *which sections need improvement* based on quiz results.
-- **Overall Feedback** – Get a *summary of performance trends* to enhance learning.
-
-## Contributions 🤝
-Contributions are welcome! Feel free to submit issues, feature requests, or pull requests.
-
-## License 📜
-MIT License
-
-## Installation & Usage
-- **Installation**: EasyQZ is available as a web application and can be accessed via any modern web browser.
+## License
+MIT
