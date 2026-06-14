@@ -1,6 +1,7 @@
 // WebLLM wrapper — the model runs entirely in the browser via WebGPU.
 // No API key, no cloud, no server. (Init pattern reused from AgentHerd.)
 import * as webllm from '@mlc-ai/web-llm';
+import { extractJSON, normalizeQuestions } from './parse.js';
 
 export const MODELS = [
   { id: 'Llama-3.2-1B-Instruct-q4f16_1-MLC', label: 'Llama 3.2 · 1B', size: '~0.9 GB', note: 'Fastest' },
@@ -53,22 +54,6 @@ export async function loadModel(modelId, onProgress) {
   }
 }
 
-// --- JSON extraction: small local models wrap JSON in prose / code fences. ---
-function extractJSON(text) {
-  if (!text) return null;
-  let t = text.replace(/```json/gi, '```').trim();
-  const fence = t.match(/```([\s\S]*?)```/);
-  if (fence) t = fence[1].trim();
-  const start = t.indexOf('{');
-  const end = t.lastIndexOf('}');
-  if (start === -1 || end === -1 || end < start) return null;
-  let slice = t.slice(start, end + 1);
-  try { return JSON.parse(slice); } catch {}
-  // tolerate trailing commas
-  try { return JSON.parse(slice.replace(/,\s*([}\]])/g, '$1')); } catch {}
-  return null;
-}
-
 function buildPrompt({ topic, sourceText, count, difficulty }) {
   const base = sourceText
     ? `Create a multiple-choice quiz that tests understanding of the following material:\n\n"""${sourceText.slice(0, 6000)}"""`
@@ -77,35 +62,14 @@ function buildPrompt({ topic, sourceText, count, difficulty }) {
 
 Rules:
 - Exactly ${count} questions, ${difficulty} difficulty.
-- Each question has exactly 4 answer choices.
+- "choices" MUST be an array of exactly 4 plain strings (never objects).
 - Exactly one choice is correct.
-- "answerIndex" is the 0-based index of the correct choice.
+- "answerIndex" MUST be an integer 0, 1, 2, or 3 — the position of the correct choice.
 - Keep questions self-contained and unambiguous.
 - Add a one-sentence "explanation" for the correct answer.
 
 Respond with ONLY valid JSON, no prose, in exactly this shape:
-{"questions":[{"question":"...","choices":["...","...","...","..."],"answerIndex":0,"explanation":"..."}]}`;
-}
-
-function normalizeQuestions(raw, count) {
-  if (!raw || !Array.isArray(raw.questions)) return null;
-  const out = [];
-  for (const q of raw.questions) {
-    const choices = Array.isArray(q.choices) ? q.choices.map(String).filter(Boolean) : [];
-    if (!q.question || choices.length < 2) continue;
-    let idx = Number(q.answerIndex);
-    if (!Number.isInteger(idx) || idx < 0 || idx >= choices.length) idx = 0;
-    out.push({
-      id: `q${out.length}`,
-      question: String(q.question).trim(),
-      choices,
-      answerIndex: idx,
-      explanation: q.explanation ? String(q.explanation).trim() : '',
-      userAnswer: null,
-    });
-    if (out.length >= count) break;
-  }
-  return out.length ? out : null;
+{"questions":[{"question":"What is 2+2?","choices":["3","4","5","6"],"answerIndex":1,"explanation":"2+2 equals 4."}]}`;
 }
 
 // Generates a quiz with the local model. Retries once if JSON is malformed.
