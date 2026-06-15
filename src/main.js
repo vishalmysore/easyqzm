@@ -180,12 +180,39 @@ async function submitQuiz() {
 }
 
 // ---- live multiplayer room -----------------------------------------------
+let connectWatch = null;
+function armConnectWatch() {
+  clearTimeout(connectWatch);
+  connectWatch = setTimeout(() => {
+    const peers = room.roster().filter((r) => !r.isMe).length;
+    if (peers === 0 && (state.screen === 'roomJoin' || state.screen === 'roomLobby')) {
+      state.roomError = 'Still not connected. Check the join code was pasted in full, and that both devices can reach each other — same Wi-Fi or a phone hotspot helps. Strict corporate/mobile NATs can block direct P2P.';
+      render();
+    }
+  }, 25000);
+}
+
+// React to any roster/peer change: move a joiner into the lobby the moment a
+// peer actually connects, and re-render whichever room screen is showing.
+function refreshRoom() {
+  const peers = (state.roomRoster || []).filter((r) => !r.isMe).length;
+  if (peers > 0) { clearTimeout(connectWatch); state.roomError = ''; }
+  if (state.screen === 'roomJoin' && peers > 0) { go('roomLobby'); return; }
+  if (['roomLobby', 'roomJoin', 'roomResult'].includes(state.screen)) render();
+}
+
 function setupRoomEvents() {
   room.onRoom({
-    onRoster: (rows) => { state.roomRoster = rows; if (state.screen === 'roomLobby' || state.screen === 'roomResult') render(); },
+    onRoster: (rows) => { state.roomRoster = rows; refreshRoom(); },
     onChallenge: (quiz) => enterRoomChallenge(quiz),
-    onSystem: (text) => { state.roomLog = [...state.roomLog, text].slice(-6); if (state.screen === 'roomLobby') render(); },
-    onPeerState: () => { state.roomRoster = room.roster(); if (['roomLobby', 'roomJoin', 'roomResult'].includes(state.screen)) render(); },
+    onSystem: (text) => { state.roomLog = [...state.roomLog, text].slice(-6); refreshRoom(); },
+    onPeerState: (name, st) => {
+      if (['failed', 'disconnected', 'closed'].includes(st) && room.roster().filter((r) => !r.isMe).length === 0) {
+        state.roomError = 'Connection failed. If this keeps happening, try both devices on the same network/hotspot.';
+      }
+      state.roomRoster = room.roster();
+      refreshRoom();
+    },
   });
 }
 
@@ -212,7 +239,7 @@ async function hostCreateRoom() {
 }
 
 async function hostAcceptAnswer(token) {
-  try { await room.acceptAnswer(token); state.roomLink = ''; render(); }
+  try { await room.acceptAnswer(token); state.roomLink = ''; state.roomError = ''; armConnectWatch(); render(); }
   catch (e) { state.roomError = 'Invalid join code. Ask them to copy it again.'; render(); }
 }
 
@@ -226,6 +253,7 @@ async function joinerGenerateAnswer() {
     state.roomActive = true;
     state.roomAnswer = await room.joinRoom({ name: state.me.name, avatar: state.me.avatar }, state.roomJoinToken);
     state.roomRoster = room.roster();
+    armConnectWatch();
     render();
   } catch (e) { console.error(e); state.roomError = 'This invite link looks invalid or expired.'; render(); }
 }
